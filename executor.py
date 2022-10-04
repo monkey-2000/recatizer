@@ -34,7 +34,8 @@ def downloader(update, context):
 
 
 def main():
-    updater = Updater('5725782396:AAHCjlA4YKa0YlPudMBRNsWI1nEtEOClI5w')
+    # Use BothFather bot. enter /newbot and enter the name of new chatbot
+    updater = Updater('')
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
