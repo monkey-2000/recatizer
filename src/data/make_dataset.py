@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
+import os
+
 import click
 import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
+from dataset_maker import make_cat_individual_images_base
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
+# @click.command()
+# @click.argument('input_filepath', type=click.Path(exists=True))
+# @click.argument('output_filepath', type=click.Path())
 def main(input_filepath, output_filepath):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+
+    images_base = make_cat_individual_images_base(input_filepath)
+
+    images_base.to_csv(output_filepath + 'images_database.csv')
 
 
 if __name__ == '__main__':
@@ -22,9 +29,12 @@ if __name__ == '__main__':
 
     # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
+  #  project_dir = os.getcwd()
+    input_filepath = '/home/art/Документы/cet_breeds_predictor/archive/cat_individuals_dataset/'
+    output_filepath = str(project_dir.absolute()) + '/data/raw/'
 
     # find .env automagically by walking up directories until it's found, then
     # load up the .env entries as environment variables
     load_dotenv(find_dotenv())
-
-    main()
+    main(input_filepath, output_filepath)
+   # main(input_filepath, output_filepath)
