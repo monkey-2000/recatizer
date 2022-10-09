@@ -30,11 +30,13 @@ if __name__ == '__main__':
     # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
   #  project_dir = os.getcwd()
-    input_filepath = '/home/art/Документы/cet_breeds_predictor/archive/cat_individuals_dataset/'
+
+    load_dotenv()
+    input_filepath = os.environ['CAT_INDIVIDUALS_DS_PATH']
     output_filepath = str(project_dir.absolute()) + '/data/raw/'
 
     # find .env automagically by walking up directories until it's found, then
     # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
+
     main(input_filepath, output_filepath)
    # main(input_filepath, output_filepath)
