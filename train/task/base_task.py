@@ -11,6 +11,7 @@ from torch import nn
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
+from train.metrics.base_criterion import BaseLossAndMetricCriterion
 from train.task.task_executor import TaskRunner
 
 
@@ -43,20 +44,27 @@ class BaseTask(ABC):
 
     def get_train_loaders(self):
         dataset = self.get_train_dataset()
-        return DataLoader(dataset, num_workers=4, shuffle=True, drop_last=True, batch_size=self.dataset_config.batch_size)
+        return DataLoader(dataset, num_workers=0, shuffle=True, drop_last=True, batch_size=self.dataset_config.batch_size)
 
     def get_val_loaders(self):
         dataset = self.get_val_dataset()
-        return DataLoader(dataset, num_workers=4, shuffle=False, drop_last=True, batch_size=self.dataset_config.batch_size)
+        return DataLoader(dataset, num_workers=0, shuffle=False, drop_last=True, batch_size=self.dataset_config.batch_size)
 
 
     def get_model(self) -> nn.Module:
         raise NotImplementedError
 
+    @abstractmethod
+    def build_criterion(self) -> BaseLossAndMetricCriterion:
+        """This method should build calculator for all tasks."""
+        raise NotImplementedError
     def get_runner(self, model: nn.Module) -> TaskRunner:
+        criterion = self.build_criterion()
         return TaskRunner(
             model,
+            criterion,
             self.config.optimizer,
+            self.config.model_config,
             self.config.save_folder
         )
 

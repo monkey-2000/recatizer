@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 import math
-
+import torch.nn.functional as F
 
 class ArcMarginProduct(nn.Module):
     r"""Implement of large margin arc distance: :
@@ -24,6 +24,7 @@ class ArcMarginProduct(nn.Module):
         m: float,
         easy_margin: bool,
         ls_eps: float,
+        device: torch.device
     ):
         super(ArcMarginProduct, self).__init__()
         self.in_features = in_features
@@ -39,8 +40,9 @@ class ArcMarginProduct(nn.Module):
         self.sin_m = math.sin(m)
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
+        self.device = device
 
-    def forward(self, input: torch.Tensor, label: torch.Tensor, device: str = "cuda") -> torch.Tensor:
+    def forward(self, input: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
         # --------------------------- cos(theta) & phi(theta) ---------------------
         cosine = F.linear(F.normalize(input), F.normalize(self.weight))
         # Enable 16 bit precision
@@ -54,7 +56,7 @@ class ArcMarginProduct(nn.Module):
             phi = torch.where(cosine > self.th, phi, cosine - self.mm)
         # --------------------------- convert label to one-hot ---------------------
         # one_hot = torch.zeros(cosine.size(), requires_grad=True, device='cuda')
-        one_hot = torch.zeros(cosine.size(), device=device)
+        one_hot = torch.zeros(cosine.size(), device=self.device)
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
         if self.ls_eps > 0:
             one_hot = (1 - self.ls_eps) * one_hot + self.ls_eps / self.out_features

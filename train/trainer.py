@@ -1,14 +1,6 @@
 import argparse
-import os
 import warnings
-from typing import Dict, List, Tuple
 from configs.utils import load
-from dataset.loader import load_df
-import numpy as np
-import pandas as pd
-import timm
-import torch
-import wandb
 
 from train.task.cats_task import CatsTask
 
