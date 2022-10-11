@@ -7,7 +7,7 @@ from albumentations import (
     MotionBlur,
     Resize,
     Compose,
-    Cutout,
+    CoarseDropout,
     Rotate,
     CLAHE,
     Blur,
@@ -16,7 +16,7 @@ from albumentations import (
     HueSaturationValue,
     RandomBrightnessContrast,
     OneOf,
-    JpegCompression,
+    ImageCompression,
 )
 
 
@@ -52,11 +52,11 @@ def get_transforms_train(image_size, p=1, **kwargs):
         HueSaturationValue(p=0.5),
         RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, brightness_by_max=False, p=0.5),
         OneOf(_build_blurs(), p=0.2),
-        JpegCompression(quality_lower=10, quality_upper=100, p=0.3),
+        ImageCompression(quality_lower=10, quality_upper=100, p=0.3),
         CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.3),
         Rotate(limit=10, p=0.3),
         Resize(image_size[0], image_size[1], always_apply=True),
-        Cutout(num_holes=2, max_h_size=10, max_w_size=10),
+        CoarseDropout(max_holes=2, max_height=10, max_width=10),
         ToTensor(),
     ]
     return Compose(augmentations, p=p, **kwargs)

@@ -14,6 +14,7 @@ class OptimizerParams:
     epochs: int
     lr: float
     wd: float
+    eps: float
     schedule: LearningSchedule
 
 @dataclass
@@ -24,7 +25,20 @@ class TaskConfig:
 class DatasetConfig:
     batch_size: int
     train_path: str
+    base_path: str
     val_path: str
+
+@dataclass
+class ModelConfig:
+    embedding_size: int
+    model_name: str
+    num_classes: int
+    path_to_save: str
+    resume_checkpoint: str
+    pool_type: str
+    p: int
+    p_trainable: bool
+
 
 @dataclass
 class Config:
@@ -34,3 +48,4 @@ class Config:
     optimizer: OptimizerParams
     task_config: TaskConfig
     dataset_config: DatasetConfig
+    model_config: ModelConfig

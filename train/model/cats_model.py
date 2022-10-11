@@ -1,41 +1,51 @@
 import torch.nn as nn
-import timm
-from gem_layer import GeM
+import torch
+
+from train.model.gem_layer import GeM
+from train.configs.base_config import ModelConfig
+from train.model import backbone
+from train.model.arc_face_head import ArcMarginProduct
+from train.model.heads.arc_face import ArcAdaptiveMarginProduct
+import numpy as np
 
 class HappyWhaleModel(nn.Module):
-    def __init__(self, modelName, numClasses, noNeurons, embeddingSize):
+    def __init__(self, config: ModelConfig, device: torch.device):
 
         super(HappyWhaleModel, self).__init__()
         # Retrieve pretrained weights
-        self.backbone = timm.create_model(modelName, pretrained=True)
-        # Save the number features from the backbone
-        ### different models have different numbers e.g. EffnetB3 has 1536
-        backbone_features = self.backbone.classifier.in_features
-        self.backbone.classifier = nn.Identity()  # ?????
-        self.backbone.global_pool = nn.Identity()  # ?????
-        self.gem = GeM()
-        # Embedding layer (what we actually need)
-        self.embedding = nn.Sequential(nn.Linear(backbone_features, noNeurons),
-                                       nn.BatchNorm1d(noNeurons),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
+        self.backbone = backbone.load_backbone(config.model_name, pretrained=True)
+        self.forward_features = self.build_forward_features(config)
+        self.arcface = ArcMarginProduct(in_features=config.embedding_size,
+                                        out_features=config.num_classes,
+                                        s=30.0, m=0.50, easy_margin=False, ls_eps=0.0, device=device)
 
-                                       nn.Linear(noNeurons, embeddingSize),
-                                       nn.BatchNorm1d(embeddingSize),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2))
-        self.arcface = ArcMarginProduct(in_features=embeddingSize,
-                                        out_features=numClasses,
-                                        s=30.0, m=0.50, easy_margin=False, ls_eps=0.0)
+    def build_forward_features(self, config: ModelConfig):
+        forward_features = nn.Sequential()
+        if config.pool_type == "adaptive":
+            forward_features.add_module("pool", nn.AdaptiveAvgPool2d((1, 1)))
+            forward_features.add_module("flatten", nn.Flatten())
+        elif config.pool_type == "gem":
+            forward_features.add_module(
+                "pool", GeM(p=config.p, p_trainable=config.p_trainable)
+            )
+            forward_features.add_module("flatten", nn.Flatten())
+        embedding_size = self.backbone.out_features
+        if config.embedding_size > 0:
+            embedding_size = config.embedding_size
+            forward_features.add_module(
+                "linear",
+                nn.Linear(self.backbone.out_features, embedding_size, bias=True),
+            )
+        forward_features.add_module("normalize", nn.BatchNorm1d(embedding_size))
+        forward_features.add_module("relu", torch.nn.PReLU())
+        return forward_features
 
-    def forward(self, image, is_train: bool = True):
 
-        features = self.backbone(image)
-        # flatten transforms from e.g.: [3, 1536, 1, 1] to [3, 1536]
-        gem_pool = self.gem(features).flatten(1)
-        embedding = self.embedding(gem_pool)
+    def forward(self, images, labels, is_train: bool = True):
+        features = self.backbone(images)
+        embedding = self.forward_features(features)
         if is_train != None:
-            out = self.arcface(embedding, is_train)
-            return out, embedding
+            out = self.arcface(embedding, labels)
+            return {"out": out, "embedding": embedding}
         else:
-            return embedding
+            return {"embedding": embedding}
