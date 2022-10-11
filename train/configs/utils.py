@@ -1,7 +1,7 @@
 from train.configs.base_config import Config
-from train.configs.resnet18_config import resnet18_config
+from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
 
 
-mapping = {resnet18_config.name: resnet18_config}
+mapping = {tf_efficientnet_b0_config.name: tf_efficientnet_b0_config}
 def load(congig_name: str) -> Config:
     return mapping.get(congig_name)

@@ -14,6 +14,7 @@ class OptimizerParams:
     epochs: int
     lr: float
     wd: float
+    eps: float
     schedule: LearningSchedule
 
 @dataclass
@@ -33,6 +34,10 @@ class ModelConfig:
     model_name: str
     num_classes: int
     path_to_save: str
+    resume_checkpoint: str
+    pool_type: str
+    p: int
+    p_trainable: bool
 
 
 @dataclass

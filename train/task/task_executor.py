@@ -9,17 +9,17 @@ from torch import optim
 from torch.optim import lr_scheduler
 import warnings
 import torch.nn as nn
-from train.configs.base_config import OptimizerParams, LearningSchedule, ModelConfig
-from train.metrics.base_criterion import BaseLossAndMetricCriterion
+from train.configs.base_config import OptimizerParams, ModelConfig
+from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from timm.utils import AverageMeter
-from numbers import Number
 
-from train.utils import model_saver
+from train.optimizers.optimizer_builder import OptimizerBuilder
+from train.utils.checkpoint_utils import CheckpointHandler
 
 
 class MetricsCollection:
     """
-    Some callbacks use this class to get information about metrics
+    Some callbacks use this class to get information about optimizers
     """
 
     def __init__(self):
@@ -40,18 +40,17 @@ class TaskRunner:
                  device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
 
         self.device = device
-        self.model = model
+        self.checkpoint_handler = CheckpointHandler(model_config)
+        self.model = self._init_model(model)
         self.model_config = model_config
         self.model.to(self.device)
         self.criterion = criterion
         self.avg_meters = {}
-        self.optimizer = self._create_optimizer(optimizer_config)
+        self.optimizer, self.lr_scheduler = OptimizerBuilder(optimizer_config).build(model)
 
         self.save_folder = save_folder
         self.weights_save_path = os.path.join('results', 'weights', self.save_folder)
         self.logs_save_path = os.path.join('results', 'logs', self.save_folder)
-        self.lr_scheduler = self._create_scheduler(optimizer_config.schedule)
-       # self.callbacks = CallbacksCollection(self._create_basic_callbacks())
         self.lr = optimizer_config.lr
         self.separate_step = True
 
@@ -63,43 +62,9 @@ class TaskRunner:
         self.metrics_collection = MetricsCollection()
         self.model_input_fields = ['image', 'label']
 
-    def _create_optimizer(self, optimizer_config: OptimizerParams) -> torch.optim.Optimizer:
-        """
-        available options - SGD and Adam. See pytorch documentation.
-        """
-        params = self.model.parameters()
-        learning_rate = optimizer_config.lr
-        weight_decay = optimizer_config.wd
-        if optimizer_config.type == 'sgd':
-            optimizer = optim.SGD(params,
-                                  lr=learning_rate,
-                                  weight_decay=weight_decay)
-        elif optimizer_config.type == 'adam':
-            optimizer = optim.Adam(params,
-                                   lr=learning_rate,
-                                   weight_decay=weight_decay)
-        else:
-            raise KeyError("unrecognized optimizer type. Please pick SGD or Adam")
-        return optimizer
-
-    def _create_scheduler(self, scheduler_config: LearningSchedule) -> lr_scheduler._LRScheduler:
-        """
-        see pytorch lr_scheduler section for details
-        :return:
-        """
-        if scheduler_config.type == "step":
-            scheduler = lr_scheduler.StepLR(self.optimizer, **scheduler_config.params)
-        elif scheduler_config.type == "multistep":
-            scheduler = lr_scheduler.MultiStepLR(self.optimizer, **scheduler_config.params)
-        elif scheduler_config.type == "exponential":
-            scheduler = lr_scheduler.ExponentialLR(self.optimizer, **scheduler_config.params)
-
-        else:
-            scheduler = lr_scheduler.LambdaLR(self.optimizer, lambda epoch: 1.0)
-
-        return scheduler
-
-
+    def _init_model(self, model: nn.Module):
+        self.checkpoint_handler.load_checkpoint(model)
+        return model
 
     def _run_one_epoch(self, epoch: int, loaders: Dict[str, DataLoader],
                        training: bool = True):
@@ -143,8 +108,10 @@ class TaskRunner:
             warnings.warn("make sure your model has list of inputs")
         model_output = self.model(*input, training)
         assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
+
         loss = self.criterion.calculate(model_output, data, training)
         self.avg_meters['loss'].update(loss.item(), input[0].size(0))
+
         if math.isnan(loss.item()) or math.isinf(loss.item()):
             raise ValueError("NaN loss !!")
         if training:
@@ -160,8 +127,8 @@ class TaskRunner:
         for epoch in range(self.start_epoch, self.nb_epoch):
             self.model.train()
             self.metrics_collection.train_metrics = self._run_one_epoch(epoch, loaders, training=True)
-            model_saver._save_last(model=self.model, current_epoch=epoch,
-                                   current_metrics=self.metrics_collection.train_metrics, config=self.model_config)
+            self.checkpoint_handler.save_last(model=self.model, current_epoch=epoch,
+                                              current_metrics=self.metrics_collection.train_metrics)
             if epoch >= self.warmup_epoch and not self.step_mode_schedule:
                 self.lr_scheduler.step(epoch)
 

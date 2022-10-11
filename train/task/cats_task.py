@@ -1,8 +1,8 @@
 import timm
 import torch
 
-from train.metrics.base_criterion import BaseLossAndMetricCriterion
-from train.metrics.cross_entropy import ClsLossAndMetricCriterion
+from train.optimizers.base_criterion import BaseLossAndMetricCriterion
+from train.optimizers.cross_entropy import ClsLossAndMetricCriterion
 from train.model.cats_model import HappyWhaleModel
 from train.task.base_task import BaseTask
 from train.configs.base_config import Config

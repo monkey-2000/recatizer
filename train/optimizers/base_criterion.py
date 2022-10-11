@@ -14,7 +14,7 @@ class BaseLossAndMetricCriterion(ABC):
 
     def on_epoch_start(self):
         """
-        Before each epoch you can do some actions (mostly reset internal metrics calculators)
+        Before each epoch you can do some actions (mostly reset internal optimizers calculators)
         :return:
         """
         pass

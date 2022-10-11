@@ -2,7 +2,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from train.metrics.base_criterion import BaseLossAndMetricCriterion
+from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 
 
 class ClsLossAndMetricCriterion(BaseLossAndMetricCriterion):

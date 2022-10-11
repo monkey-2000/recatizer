@@ -1,17 +1,12 @@
-import gzip
-import json
-import os
-import shutil
 import time
 from abc import abstractmethod, ABC
 from datetime import datetime
-from shutil import copy
 from train.configs.base_config import Config, DatasetConfig, TaskConfig
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-from train.metrics.base_criterion import BaseLossAndMetricCriterion
+from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from train.task.task_executor import TaskRunner
 
 
@@ -58,6 +53,7 @@ class BaseTask(ABC):
     def build_criterion(self) -> BaseLossAndMetricCriterion:
         """This method should build calculator for all tasks."""
         raise NotImplementedError
+
     def get_runner(self, model: nn.Module) -> TaskRunner:
         criterion = self.build_criterion()
         return TaskRunner(
