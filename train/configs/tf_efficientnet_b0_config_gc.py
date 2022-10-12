@@ -5,7 +5,7 @@ tf_efficientnet_b0_config_gc = Config(
     optimizer=OptimizerParams(epochs=5, lr=3e-4, wd=5e-4, eps=1e-8, type="Adam", schedule=LearningSchedule(type="exponential", params={"gamma": 0.98})),
     task_config=TaskConfig(model_name="tf_efficientnet_b0"),
     save_folder="",
-    dataset_config=DatasetConfig(batch_size=16, base_path="/content/gdrive/MyDrive/cats_dataset", train_path="/content/gdrive/MyDrive/recatizer/recatizer/data/processed/cat_individual_database.csv", val_path="/content/gdrive/MyDrive/recatizer/recatizer/data/processed/cat_individual_database.csv"),
+    dataset_config=DatasetConfig(batch_size=16, base_path="/content/gdrive/MyDrive/cats_dataset", train_path="/content/gdrive/MyDrive/recatizer/data/processed/cat_individual_database.csv", val_path="/content/gdrive/MyDrive/recatizer/data/processed/cat_individual_database.csv"),
     model_config=ModelConfig(model_name="tf_efficientnet_b0",
                              embedding_size=512, num_classes=509,
                              path_to_save="/content/gdrive/MyDrive/dev/models", resume_checkpoint="",
