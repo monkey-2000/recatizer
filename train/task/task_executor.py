@@ -104,8 +104,8 @@ class TaskRunner:
         input = [data[key] for key in model_input_fields]
         input = [i.to(self.device) for i in input]
         warnings.warn(self.device.type)
-        warnings.warn(input[0].get_device())
-        warnings.warn(input[1].get_device())
+        warnings.warn(str(input[0].get_device()))
+        warnings.warn(str(input[1].get_device()))
 
 
         if len(input) != 1:
