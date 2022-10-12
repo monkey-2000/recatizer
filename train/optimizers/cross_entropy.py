@@ -16,7 +16,7 @@ class ClsLossAndMetricCriterion(BaseLossAndMetricCriterion):
     def calculate(
         self, output: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor], training: bool
     ) -> torch.Tensor:
-        loss = self.loss(output["logits_margin"].cuda(), target["label"])
+        loss = self.loss(output["logits_margin"], target["label"].cuda())
         if self.mean:
             return torch.mean(loss)
         else:
