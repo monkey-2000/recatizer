@@ -1,6 +1,6 @@
 import timm
 import torch
-
+import pandas as pd
 from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from train.optimizers.cross_entropy import ClsLossAndMetricCriterion
 from train.model.cats_model import HappyWhaleModel
@@ -28,5 +28,7 @@ class CatsTask(BaseTask):
         return ClsLossAndMetricCriterion(self.device)
 
     def get_model(self):
-        model = HappyWhaleModel(self.model_config, self.device)
+        df = pd.read_csv(self.dataset_config.train_path)
+        id_class_nums = df.cat_id.value_counts().sort_index().values
+        model = HappyWhaleModel(self.model_config, self.device, id_class_nums)
         return model

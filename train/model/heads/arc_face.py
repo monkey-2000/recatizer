@@ -26,6 +26,7 @@ class ArcMarginProduct(nn.Module):
         easy_margin=False,
         use_penalty=True,
         initialization="xavier",
+        device: torch.device = torch.device('cuda')
     ):
         super(ArcMarginProduct, self).__init__()
         self.in_features = in_features

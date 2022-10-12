@@ -7,7 +7,9 @@ tf_efficientnet_b0_config = Config(
     save_folder="",
     dataset_config=DatasetConfig(batch_size=16, base_path="/Users/alinatamkevich/dev/datasets/cats_dataset", train_path="/Users/alinatamkevich/dev/recatizer/data/processed/cat_individual_database.csv", val_path="/Users/alinatamkevich/dev/recatizer/data/processed/cat_individual_database.csv"),
     model_config=ModelConfig(model_name="tf_efficientnet_b0",
-                             embedding_size=512, num_classes=517,
+                             embedding_size=512, num_classes=509,
                              path_to_save="/Users/alinatamkevich/dev/models", resume_checkpoint="",
-                             pool_type="gem", p=3, p_trainable=False)
+                             pool_config=PoolConfig(type="gem", params={"p":3, "p_trainable":False}),
+                             head_config=HeadConfig(type="adaptive_arcface", params={"m": 0.2, "s": 20.0, "k": 3, "margin_coef_id": 0.27126,
+                                                                                     "margin_power_id": -0.364399, "margin_cons_id": 0.05, "init": "uniform"}))
 )
