@@ -103,6 +103,7 @@ class TaskRunner:
         model_input_fields = self.model_input_fields
         input = [data[key] for key in model_input_fields]
         input = [i.to(self.device) for i in input]
+        print(self.device, input[0].get_device(), input[1].get_device())
 
         if len(input) != 1:
             warnings.warn("make sure your model has list of inputs")
