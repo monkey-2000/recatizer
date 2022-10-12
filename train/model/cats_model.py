@@ -14,6 +14,7 @@ class HappyWhaleModel(nn.Module):
         super(HappyWhaleModel, self).__init__()
         # Retrieve pretrained weights
         self.id_class_nums = id_class_nums
+        self.device = device
         self.backbone = backbone.load_backbone(config.model_name, pretrained=True)
         self.forward_features, embedding_size = self.build_forward_features(config)
         self.arcface = self.build_head(config, embedding_size)
@@ -58,13 +59,14 @@ class HappyWhaleModel(nn.Module):
             s=config.head_config.params["s"],
             k=config.head_config.params["k"],
             initialization=config.head_config.params["init"],
+            device=self.device
         )
         return head
     def forward(self, images, labels, is_train: bool = True):
         features = self.backbone(images)
         embedding = self.forward_features(features)
         if is_train != None:
-            out = self.arcface(embedding, labels)
-            return {"out": out, "embedding": embedding}
+            logits_margin, logits = self.arcface(embedding, labels)
+            return {"logits_margin": logits_margin, "logits": logits, "embedding": embedding}
         else:
             return {"embedding": embedding}

@@ -11,13 +11,18 @@ class ClsLossAndMetricCriterion(BaseLossAndMetricCriterion):
         self.loss = nn.CrossEntropyLoss()
         self.device = device
         self.meters = meters or []
+        self.mean = True
 
     def calculate(
         self, output: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor], training: bool
     ) -> torch.Tensor:
 
-        loss = self.loss(output["out"], target["label"])
-        return loss
+        loss = self.loss(output["logits_margin"], target["label"])
+        if self.mean:
+            return torch.mean(loss)
+        else:
+            return loss
+
 
     def on_epoch_start(self):
         for meter in self.meters:
