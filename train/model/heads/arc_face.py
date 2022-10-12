@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
-
+from torch import Tensor
 
 class ArcMarginProduct(nn.Module):
     r"""Implement of large margin arc distance: :
@@ -97,14 +97,14 @@ class ArcAdaptiveMarginProduct(nn.Module):
         else:
             assert 0 == 1
 
-    def forward(self, input, labels):
+    def forward(self, input: Tensor, labels: Tensor):
         # subcenter
         cosine_all = F.linear(F.normalize(input), F.normalize(self.weight))
         cosine_all = cosine_all.view(-1, self.out_features, self.k)
         cosine, _ = torch.max(cosine_all, dim=2)
 
         ms = []
-        ms = self.margins[labels.cpu().numpy()]
+        ms = self.margins[labels.clone().cpu().numpy()]
         cos_m = torch.from_numpy(np.cos(ms)).float().to(self.device)
         sin_m = torch.from_numpy(np.sin(ms)).float().to(self.device)
         th = torch.from_numpy(np.cos(math.pi - ms)).float().to(self.device)
