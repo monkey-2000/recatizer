@@ -20,10 +20,10 @@ class TensorBoard(Callback):
 
     def on_epoch_end(self, epoch):
         for k, v in self.metrics_collection.train_metrics.items():
-            self.writer.add_scalar('train/{}'.format(k.replace('@', '_')), float(v), global_step=epoch)
+            self.writer.add_scalar('train/{}'.format(k.replace('@', '_')), float(v.avg), global_step=epoch)
 
         for k, v in self.metrics_collection.val_metrics.items():
-            self.writer.add_scalar('val/{}'.format(k.replace('@', '_')), float(v), global_step=epoch)
+            self.writer.add_scalar('val/{}'.format(k.replace('@', '_')), float(v.avg), global_step=epoch)
 
         for idx, param_group in enumerate(self.optimizer.param_groups):
             lr = param_group['lr']
@@ -52,11 +52,11 @@ class JsonMetricSaver(Callback):
 
     def on_epoch_end(self, epoch):
         with open(self.train_metrics_path, 'r+') as f:
-            data = self.metrics_collection.train_metrics
+            data = {k: v.avg for k,v in self.metrics_collection.train_metrics.items()}
             self._write_data(f, epoch, data)
 
         with open(self.val_metrics_path, 'r+') as f:
-            data = self.metrics_collection.val_metrics
+            data = {k: v.avg for k,v in self.metrics_collection.val_metrics.items()}
             self._write_data(f, epoch, data)
 
         with open(self.other_metrics_path, 'r+') as f:
