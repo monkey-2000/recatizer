@@ -29,15 +29,24 @@ class DatasetConfig:
     val_path: str
 
 @dataclass
+class HeadConfig:
+    type: str
+    params: Dict[str, float]
+@dataclass
+class PoolConfig:
+    type: str
+    params: Dict[str, float]
+
+
+@dataclass
 class ModelConfig:
     embedding_size: int
     model_name: str
     num_classes: int
     path_to_save: str
     resume_checkpoint: str
-    pool_type: str
-    p: int
-    p_trainable: bool
+    head_config: HeadConfig
+    pool_config: PoolConfig
 
 
 @dataclass

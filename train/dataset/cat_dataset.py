@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset
 from typing import Any
 from train.utils import image_utils
+from sklearn.preprocessing import LabelEncoder
 
 
 class CatsDataset(Dataset):
@@ -21,6 +22,7 @@ class CatsDataset(Dataset):
     def __load_df__(self, dir_path: str, path: str) -> pd.DataFrame:
         df = pd.read_csv(path)
         df["path"] = df["path"].apply(lambda img_path: os.path.join(dir_path, img_path))
+        df["cat_id"] = LabelEncoder().fit_transform(df["cat_id"])
         df = df[df.format == 'jpg']
         return df
 

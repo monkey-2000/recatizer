@@ -2,11 +2,8 @@ import math
 import os
 import torch
 from tqdm import tqdm
-from typing import Dict, Union, Optional, List, Iterable, Tuple
-from collections import OrderedDict
+from typing import Dict, Union, List
 from torch.utils.data.dataloader import DataLoader
-from torch import optim
-from torch.optim import lr_scheduler
 import warnings
 import torch.nn as nn
 from train.configs.base_config import OptimizerParams, ModelConfig
@@ -14,6 +11,8 @@ from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from timm.utils import AverageMeter
 
 from train.optimizers.optimizer_builder import OptimizerBuilder
+from train.task.callbacks.base import CallbacksCollection, Callback
+from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver
 from train.utils.checkpoint_utils import CheckpointHandler
 
 
@@ -37,9 +36,11 @@ class TaskRunner:
                  optimizer_config: OptimizerParams,
                  model_config: ModelConfig,
                  save_folder: str,
+                 test_every: int = 5,
                  device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
 
         self.device = device
+        self.test_every = test_every
         self.checkpoint_handler = CheckpointHandler(model_config)
         self.model = self._init_model(model)
         self.model_config = model_config
@@ -47,10 +48,11 @@ class TaskRunner:
         self.criterion = criterion
         self.avg_meters = {}
         self.optimizer, self.lr_scheduler = OptimizerBuilder(optimizer_config).build(model)
-
         self.save_folder = save_folder
         self.weights_save_path = os.path.join('results', 'weights', self.save_folder)
         self.logs_save_path = os.path.join('results', 'logs', self.save_folder)
+        self.metrics_collection = MetricsCollection()
+        self.callbacks = CallbacksCollection(self._create_basic_callbacks())
         self.lr = optimizer_config.lr
         self.separate_step = True
 
@@ -59,12 +61,25 @@ class TaskRunner:
         self.start_epoch = 0
 
         self.step_mode_schedule = False
-        self.metrics_collection = MetricsCollection()
         self.model_input_fields = ['image', 'label']
 
     def _init_model(self, model: nn.Module):
         self.checkpoint_handler.load_checkpoint(model)
         return model
+
+    def _create_basic_callbacks(self) -> List[Callback]:
+        """
+        model and checkpoint savers, tensorboard logs saver
+        """
+        callbacks = [
+            TensorBoard(self.logs_save_path,
+                        self.optimizer,
+                        self.metrics_collection),
+            JsonMetricSaver(self.logs_save_path,
+                            self.optimizer,
+                            self.metrics_collection),
+        ]
+        return callbacks
 
     def _run_one_epoch(self, epoch: int, loaders: Dict[str, DataLoader],
                        training: bool = True):
@@ -78,15 +93,18 @@ class TaskRunner:
 
         iterator = tqdm(mode_loader)
         for batch_number, tasks_data  in enumerate(iterator):
+            self.callbacks.on_batch_begin(batch_number)
             self._make_step(tasks_data, epoch, batch_number, steps_per_epoch, training)
 
             avg_metrics = {k: f"{v.avg:.4f}" for k, v in self.avg_meters.items()}
             iterator.set_postfix({"lr": float(self.lr_scheduler.get_last_lr()[-1]),
                                   "epoch": epoch,
+                                  "mode": mode,
                                   **avg_metrics
                                   })
             if training:
                 self.lr_scheduler.step()
+            self.callbacks.on_batch_end(batch_number)
         return {k: v for k, v in self.avg_meters.items()}
 
 
@@ -103,6 +121,7 @@ class TaskRunner:
         model_input_fields = self.model_input_fields
         input = [data[key] for key in model_input_fields]
         input = [i.to(self.device) for i in input]
+
 
         if len(input) != 1:
             warnings.warn("make sure your model has list of inputs")
@@ -123,8 +142,9 @@ class TaskRunner:
 
     def fit(self,
             loaders: Dict[str, Union[Dict[str, DataLoader], DataLoader]]):
-
+        self.callbacks.on_train_begin()
         for epoch in range(self.start_epoch, self.nb_epoch):
+            self.callbacks.on_epoch_begin(epoch)
             self.model.train()
             self.metrics_collection.train_metrics = self._run_one_epoch(epoch, loaders, training=True)
             self.checkpoint_handler.save_last(model=self.model, current_epoch=epoch,
@@ -132,10 +152,14 @@ class TaskRunner:
             if epoch >= self.warmup_epoch and not self.step_mode_schedule:
                 self.lr_scheduler.step(epoch)
 
-            self.model.eval()
-            with torch.no_grad():
-                self.metrics_collection.val_metrics = self._run_one_epoch(epoch, loaders, training=False)
+            if (epoch + 1) % self.test_every == 0:
+                self.model.eval()
+                with torch.no_grad():
+                    self.metrics_collection.val_metrics = self._run_one_epoch(epoch, loaders, training=False)
 
 
             if self.metrics_collection.stop_training:
                 break
+
+            self.callbacks.on_epoch_end(epoch)
+        self.callbacks.on_train_end()

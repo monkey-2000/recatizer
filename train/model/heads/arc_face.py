@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
-
+from torch import Tensor
 
 class ArcMarginProduct(nn.Module):
     r"""Implement of large margin arc distance: :
@@ -26,8 +26,10 @@ class ArcMarginProduct(nn.Module):
         easy_margin=False,
         use_penalty=True,
         initialization="xavier",
+        device: torch.device = torch.device('cuda')
     ):
         super(ArcMarginProduct, self).__init__()
+        self.device = device
         self.in_features = in_features
         self.out_features = out_features
         self.s = s
@@ -63,7 +65,7 @@ class ArcMarginProduct(nn.Module):
             phi = torch.where(cosine.float() > self.th, phi, cosine.float() - self.mm)
         # --------------------------- convert label to one-hot ---------------------------
         # one_hot = torch.zeros(cosine.size(), requires_grad=True, device='cuda')
-        one_hot = torch.zeros(cosine.size(), device="cuda")
+        one_hot = torch.zeros(cosine.size(), device=self.device)
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
         # -------------torch.where(out_i = {x_i if condition_i else y_i) -------------
         output = (one_hot * phi) + (
@@ -74,12 +76,14 @@ class ArcMarginProduct(nn.Module):
         return output, cosine
 
 
-class ArcAdaptiveMarginProduct(nn.modules.Module):
+class ArcAdaptiveMarginProduct(nn.Module):
     def __init__(
-        self, in_features, out_features, margins, s=30.0, k=1, initialization="xavier"
+        self, in_features, out_features, margins, s=30.0, k=1, initialization="xavier",
+            device: torch.device = torch.device('cuda')
     ):
         super(ArcAdaptiveMarginProduct, self).__init__()
         self.in_features = in_features
+        self.device = device
         self.out_features = out_features
         self.s = s
         self.margins = margins
@@ -93,18 +97,18 @@ class ArcAdaptiveMarginProduct(nn.modules.Module):
         else:
             assert 0 == 1
 
-    def forward(self, input, labels):
+    def forward(self, input: Tensor, labels: Tensor):
         # subcenter
         cosine_all = F.linear(F.normalize(input), F.normalize(self.weight))
         cosine_all = cosine_all.view(-1, self.out_features, self.k)
         cosine, _ = torch.max(cosine_all, dim=2)
 
         ms = []
-        ms = self.margins[labels.cpu().numpy()]
-        cos_m = torch.from_numpy(np.cos(ms)).float().cuda()
-        sin_m = torch.from_numpy(np.sin(ms)).float().cuda()
-        th = torch.from_numpy(np.cos(math.pi - ms)).float().cuda()
-        mm = torch.from_numpy(np.sin(math.pi - ms) * ms).float().cuda()
+        ms = self.margins[labels.clone().cpu().numpy()]
+        cos_m = torch.from_numpy(np.cos(ms)).float().to(self.device)
+        sin_m = torch.from_numpy(np.sin(ms)).float().to(self.device)
+        th = torch.from_numpy(np.cos(math.pi - ms)).float().to(self.device)
+        mm = torch.from_numpy(np.sin(math.pi - ms) * ms).float().to(self.device)
         labels = F.one_hot(labels, self.out_features).float()
         sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
         phi = cosine * cos_m.view(-1, 1) - sine * sin_m.view(-1, 1)

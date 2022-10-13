@@ -1,12 +1,12 @@
 from typing import Union, Optional
-from turbojpeg import TurboJPEG, TJPF
+#from turbojpeg import TurboJPEG, TJPF
 import numpy as np
 import cv2
 import imagesize
 
 
 Array = np.ndarray
-turbo_jpeg = TurboJPEG()
+#turbo_jpeg = TurboJPEG()
 
 
 def _equal_to_byte_string(buffer: Union[bytes, Array], byte_string: bytes) -> bool:
@@ -19,16 +19,19 @@ def has_jpeg_bytes(buffer: Union[bytes, Array]) -> bool:
     return _equal_to_byte_string(header, b"JFIF") or _equal_to_byte_string(header, b"Exif")
 
 
-def decode_rgb_jpeg(buffer: Union[bytes, Array]) -> Array:
-    """Decode JPEG image from bytes array or numpy array"""
-    return turbo_jpeg.decode(buffer, pixel_format=TJPF.RGB)
+# def decode_rgb_jpeg(buffer: Union[bytes, Array]) -> Array:
+#     """Decode JPEG image from bytes array or numpy array"""
+#     return turbo_jpeg.decode(buffer, pixel_format=TJPF.RGB)
 
 
 def read_image(image_path: str) -> Array:
     with open(image_path, "rb") as fb:
         buffer = np.frombuffer(fb.read(), dtype=np.uint8)
-    use_turbo_jpeg = has_jpeg_bytes(buffer)
-    image = decode_rgb_jpeg(buffer) if use_turbo_jpeg else cv2.imdecode(buffer, cv2.IMREAD_UNCHANGED)
+    #use_turbo_jpeg = has_jpeg_bytes(buffer)
+    use_turbo_jpeg=False
+    #image = decode_rgb_jpeg(buffer) if use_turbo_jpeg else cv2.imdecode(buffer, cv2.IMREAD_UNCHANGED)
+    image = cv2.imdecode(buffer, cv2.IMREAD_UNCHANGED)
+
     # If cv2 is used for rgb image decoding then we must convert bgr into rgb format
     try:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if (not use_turbo_jpeg) and (image.ndim == 3) else image
