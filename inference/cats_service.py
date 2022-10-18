@@ -1,17 +1,19 @@
 from typing import List
 
-from bson import ObjectId
+
 from pymongo import MongoClient
 from inference.cats_service_base import CatsServiceBase
 from inference.configs.db_config import DBConfig
 from inference.entities.cat import Cat
 from inference.entities.person import Person
+from inference.matcher import CatsMatcher
 
 
 class CatsService(CatsServiceBase):
 
     def __init__(self, config: DBConfig):
         self.client = MongoClient(config.mongoDB_url)
+        self.matcher = CatsMatcher()
         self.db = self.client.recatinizer
         self.cats_collection = self.db.cats
         self.people_collection = self.db.people
@@ -24,7 +26,8 @@ class CatsService(CatsServiceBase):
     def find_similar_cats(self, cat: Cat) -> List[Cat]:
         cursor = self.cats_collection.find()
         cats = list(cursor)
-        return [Cat.from_bson(cat) for cat in cats]
+        cats = [Cat.from_bson(cat) for cat in cats]
+        return self.matcher.find_n_closest(cat, cats)
 
     def delete_user(self, id: str):
         self.people_collection.delete_one({'_id': id})
