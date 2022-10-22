@@ -98,7 +98,7 @@ async def get_photo(message: types.Message):
     print(f'начало запроса {loc_cnt}')
     while len(os.listdir(answer_dir)) == 0:
         print('пока пусто')
-        await asyncio.sleep(60)
+        await asyncio.sleep(20)
         print(f'проверка {answer_dir}, результат {len(os.listdir(answer_dir))}')
 
     for img_path in os.listdir(answer_dir):
