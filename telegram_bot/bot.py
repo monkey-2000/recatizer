@@ -1,5 +1,3 @@
-import json
-import logging
 import os
 import asyncio
 
@@ -14,24 +12,7 @@ from dotenv import load_dotenv
 from time import sleep
 
 # from telegram_bot.queu.producer import Producer
-
-
-from kafka import KafkaProducer
-
-
-class Producer:
-    def __init__(self, bootstrap_servers=['localhost:9092']):
-            self.producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                                    value_serializer=lambda v: json.dumps(v).encode('ascii'),
-                                    key_serializer=lambda v: json.dumps(v).encode('ascii'))
-
-    def send(self, value, key):
-        self.producer.send('find_cat',
-              key={'id': key},
-              value=value
-             )
-        self.producer.flush()
-        return True
+from telegram_bot.queu.producer import Producer
 
 load_dotenv()
 BOT_TOKEN = os.environ['BOT_TOKEN']
@@ -39,52 +20,39 @@ bot = Bot(token=BOT_TOKEN)
 loop = asyncio.get_event_loop()
 dp = Dispatcher(bot, loop=loop)
 
-CNT = 0
-logger = logging.getLogger('chat_bot_logger')
-async def _inference(msg):
-    global logger, CNT
-    CNT += 1
-    loc_cnt = CNT
+CNT_FIND = 0 ## id
+FIND_ANSWER_DIR = f'/home/art/PycharmProjects/recatizer/telegram_bot/res_cat/find_cat/'
+
+CNT_SAW = 0
+SAW_ANSWER_DIR = f'/home/art/PycharmProjects/recatizer/telegram_bot/res_cat/saw_cat/'
+#logger = logging.getLogger('chat_bot_logger')
+
+@dp.message_handler(commands='saw')
+async def get_photo(message: types.Message):
+    global CNT_SAW
+    CNT_SAW += 1
+    loc_cnt = CNT_FIND
     loc_cnt += 1
 
-    #logger.debug(f"запрос find начало{loc_cnt}")
-    print(f"запрос find начало{loc_cnt}")
-    #await asyncio.sleep(30)
-    sleep(5 * 60)
-    #logger.debug(f"запрос find конец{loc_cnt}")
-    print(f"запрос find конец{loc_cnt}")
-    return '/home/art/PycharmProjects/recatizer/app/images/2022-10-04 23.34.11.jpg'
-async def _inference_1(msg):
-    global logger, CNT
-    CNT += 1
-    loc_cnt = CNT
-    loc_cnt += 1
-    print(f"запрос find начало{loc_cnt}")
-    sleep(5 * 60)
-    print(f"запрос find конец{loc_cnt}")
-    return '/home/art/PycharmProjects/recatizer/app/images/2022-10-04 23.34.11.jpg'
-# @dp.message_handler(commands=['start'])
-# async def start_menu(message: types.Message):
-#     await message.answer(text='1',
-#                          reply_markup=keyboard.MENU)
+    answer_dir = SAW_ANSWER_DIR+ f'{loc_cnt}/'
+    sender = Producer()
+    kafka_msg = {'name': message.from_user.id,
+                 'breez': 'xxx',
+                 'img_path': '...img',
+                 'geo': 111,
+                 'answer_dir': answer_dir}
+    sender.send(value=kafka_msg, key=loc_cnt, topic='saw_cat')
+    os.makedirs(answer_dir)
+    # отправка ответа о получении
 
-
-# @dp.message_handler(commands='find')
-# async def show_match_result(message: types.Message):
-#     ##
-#     await message.answer(text='This is your cat?',
-#                          reply_markup=keyboard.FIND)
-
-
-#@dp.message_handler(content_types=[ContentType.PHOTO, ContentType.DOCUMENT])
 @dp.message_handler(commands='find')
 async def get_photo(message: types.Message):
-    global CNT
-    CNT += 1
-    loc_cnt = CNT
+    global CNT_FIND
+    CNT_FIND += 1
+    loc_cnt = CNT_FIND
     loc_cnt += 1
 
-    answer_dir = f'/home/art/PycharmProjects/recatizer/telegram_bot/res_cat/{loc_cnt}/'
+    answer_dir = FIND_ANSWER_DIR + f'{loc_cnt}/'
 
     sender = Producer()
     kafka_msg = {'name': message.from_user.id,
@@ -92,9 +60,11 @@ async def get_photo(message: types.Message):
                  'img_path': '...img',
                  'geo': 111,
                  'answer_dir': answer_dir}
-    sender.send(value=kafka_msg, key=loc_cnt)
+    os.makedirs(answer_dir)
 
-    os.mkdir(answer_dir)
+    sender.send(value=kafka_msg, key=loc_cnt, topic='find_cat')
+
+
     print(f'начало запроса {loc_cnt}')
     while len(os.listdir(answer_dir)) == 0:
         print('пока пусто')
@@ -108,20 +78,13 @@ async def get_photo(message: types.Message):
             await bot.send_photo(message.from_user.id, photo)
 
 
-
-
-
-    #inference()
-
-
-
 if __name__ == '__main__':
-    logger.setLevel('INFO')
-    fh = logging.FileHandler('SPOT.log')
-    fh.setLevel(level=logging.DEBUG)
-    fh.setLevel(level=logging.DEBUG)
-    logger.addHandler(fh)
-    logger.setLevel(level=logging.INFO)
-    logger.debug("Бот запущен.")
-
+    # Need to find way how to logging in acinc function!!!
+    # logger.setLevel('INFO')
+    # fh = logging.FileHandler('SPOT.log')
+    # fh.setLevel(level=logging.DEBUG)
+    # fh.setLevel(level=logging.DEBUG)
+    # logger.addHandler(fh)
+    # logger.setLevel(level=logging.INFO)
+    # logger.debug("Бот запущен.")
     executor.start_polling(dp, skip_updates=True, timeout=10*60)
