@@ -9,6 +9,9 @@ import json
 
 from kafka.errors import kafka_errors
 
+#from telegram_bot.configs.bot_cfgs import consumer_msg_cfd dont working from terminal
+from consumer_cfg import consumer_msg_cfd
+
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
@@ -41,34 +44,34 @@ def inference(msg):
 
 class MsgConsumer:
     ## part of consumer from [https://habr.com/ru/post/587592/]
-    def __init__(self, proc_fun=inference):
+    def __init__(self, config, proc_fun=inference):
         # Функция для обработки сообщения в дочернем процессе
         self.proc_fun = proc_fun
         # Клиент для чтения сообщений из Kafka
         # Клиент для чтения сообщений из Kafka
         self.consumer = KafkaConsumer(
-            'my-topic',
-            auto_offset_reset="earliest",
-            enable_auto_commit=False,
-            bootstrap_servers=['localhost:9092'],
-            group_id='my-group',
-            client_id='client1',
-            check_crcs=True,  # defult value True
+            config.kafka_topic,
+            auto_offset_reset=config.auto_offset_reset,
+            enable_auto_commit=config.enable_auto_commit,
+            bootstrap_servers=config.bootstrap_servers,
+            group_id=config.group_id,
+            client_id=config.client_id,
+            check_crcs=config.check_crcs,  # defult value True
             #consumer_timeout_ms=[float('inf')],  # defult value [float('inf')]
-            session_timeout_ms=10000,  # defult value 1000 ms
-            request_timeout_ms=305000,  # defult value  305000 ms
-            max_poll_interval_ms=300000*10,# defult value  300000 ms
-            max_partition_fetch_bytes=1048576,  # defult value  1048576 bytes
-            max_poll_records=1000,  # defult value 500
+            session_timeout_ms=config.session_timeout_ms,  # defult value 1000 ms
+            request_timeout_ms=config.request_timeout_ms,  # defult value  305000 ms
+            max_poll_interval_ms=config.max_poll_interval_ms,# defult value  300000 ms
+            max_partition_fetch_bytes=config.max_partition_fetch_bytes,  # defult value  1048576 bytes
+            max_poll_records=config.max_poll_records,  # defult value 500
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
-            key_deserializer=lambda v: json.loads(v.decode('ascii')),
+            key_deserializer=lambda v: json.loads(v.decode('ascii'))
         )
         # Лимит на количество сообщений, единовременно находящихся в пуле
-        self.pool_cache_limit = 1
+        self.pool_cache_limit = config.pool_cache_limit
         # Флаг управляемой остановки приложения
-        self.stop_processing = False
+        self.stop_processing = config.stop_processing
         # # Пул обработчиков сообщений
-        self.pool = LimitedMultiprocessingPool(processes=2)
+        self.pool = LimitedMultiprocessingPool(processes=config.processes)
 
     def set_stop_processing(self, *args, **kwargs):
         self.stop_processing = True
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     logger.setLevel(level=logging.INFO)
     logger.warning("Consumer start.")
 
-    consumer = MsgConsumer()
+    consumer = MsgConsumer(config=consumer_msg_cfd, proc_fun=inference)
     # consumer.main_loop() # Need to debug this loop!!! There is an error AttributeError: 'dict' object has no attribute 'CommitFailedError'
     consumer.simple_loop()
 

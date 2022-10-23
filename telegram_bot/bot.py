@@ -42,7 +42,10 @@ async def get_photo(message: types.Message):
                  'geo': 111,
                  'answer_dir': answer_dir}
     sender.send(value=kafka_msg, key=loc_cnt, topic='saw_cat')
-    os.makedirs(answer_dir)
+    try:
+        os.makedirs(answer_dir)
+    except FileExistsError:
+        pass
     # отправка ответа о получении
 
 @dp.message_handler(commands='find')
@@ -60,7 +63,10 @@ async def get_photo(message: types.Message):
                  'img_path': '...img',
                  'geo': 111,
                  'answer_dir': answer_dir}
-    os.makedirs(answer_dir)
+    try:
+        os.makedirs(answer_dir)
+    except FileExistsError:
+        pass
 
     sender.send(value=kafka_msg, key=loc_cnt, topic='find_cat')
 

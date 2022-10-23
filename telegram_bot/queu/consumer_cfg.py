@@ -1,6 +1,6 @@
 import json
 
-from telegram_bot.configs.bot_base_configs import KafkaConsumerCfg
+from consumer_base_configs import KafkaConsumerCfg
 
 consumer_msg_cfd = KafkaConsumerCfg(
                                         kafka_topic='my-topic',
