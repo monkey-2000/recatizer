@@ -21,3 +21,10 @@ class KafkaConsumerCfg:
     pool_cache_limit: int
     stop_processing: bool
     processes: int
+
+
+@dataclass
+class TgBotConfig:
+    token: str
+    find_cat_photo_dir: str
+    saw_cat_photo_dir: str
