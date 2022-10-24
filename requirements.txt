@@ -19,3 +19,14 @@ tqdm
 faiss-cpu
 opencv-python
 timm
+whatimage==0.0.3
+pyheif==0.7.0
+
+torch
+timm
+tensorboardX
+opencv-python==4.6.0.66
+sklearn
+albumentations==1.3.0
+
+aiogram

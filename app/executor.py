@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
 import random
@@ -35,11 +38,14 @@ def downloader(update, context):
 
 def main():
     # Use BothFather bot. enter /newbot and enter the name of new chatbot
-    updater = Updater('')
+    load_dotenv()
+    updater = Updater(os.environ['BOT_TOKEN'])
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler('show', show))
+    ## add find
+    ## we saw
     dp.add_handler(MessageHandler(Filters.photo | Filters.document.image | Filters.document.jpg, downloader))
 
     updater.start_polling()
