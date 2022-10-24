@@ -2,13 +2,15 @@ import dataclasses
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
+import numpy as np
+
 
 @dataclass
 class Cat:
     _id: Optional[str]
     path: str
     quadkey: str
-    embeddings: List
+    embeddings: np.ndarray
     additional_info: Dict[str, Any]
 
     def as_json_wo_none(self):

@@ -2,7 +2,8 @@ import glob
 from typing import List
 
 import cv2
-#import faiss as faiss
+import faiss
+
 import numpy as np
 import torchvision.transforms as transforms
 
@@ -17,71 +18,43 @@ from train.model.cats_model import HappyWhaleModel
 
 
 class CatsMatcher:
-    # def create_and_search_index(self, embedding_size: int, train_embeddings: np.ndarray, val_embeddings: np.ndarray, k: int):
-    #     index = faiss.IndexFlatIP(embedding_size)
-    #     index.add(train_embeddings)
-    #     D, I = index.search(val_embeddings, k=k)  # noqa: E741
-    #
-    #     return D, I
-    #
-    # def create_distances_df(self,
-    #         image_names: np.ndarray, targets: np.ndarray, D: np.ndarray, I: np.ndarray, stage: str  # noqa: E741
-    # ) -> pd.DataFrame:
-    #     distances_df = []
-    #     for i, image_name in tqdm(enumerate(image_names), desc=f"Creating {stage}_df"):
-    #         target = targets[I[i]]
-    #         distances = D[i]
-    #         subset_preds = pd.DataFrame(np.stack([target, distances], axis=1), columns=["target", "distances"])
-    #         subset_preds["image"] = image_name
-    #         distances_df.append(subset_preds)
-    #
-    #     distances_df = pd.concat(distances_df).reset_index(drop=True)
-    #     distances_df = distances_df.groupby(["image", "target"]).distances.max().reset_index()
-    #     distances_df = distances_df.sort_values("distances", ascending=False).reset_index(drop=True)
-    #
-    #     return distances_df
-    #
-    # def get_best_threshold(self, val_targets_df: pd.DataFrame, valid_df: pd.DataFrame) -> Tuple[float, float]:
-    #     best_th = 0
-    #     best_cv = 0
-    #     for th in [0.1 * x for x in range(11)]:
-    #         all_preds = get_predictions(valid_df, threshold=th)
-    #
-    #         cv = 0
-    #         for i, row in val_targets_df.iterrows():
-    #             target = row.target
-    #             preds = all_preds[row.image]
-    #             val_targets_df.loc[i, th] = map_per_image(target, preds)
-    #
-    #         cv = val_targets_df[th].mean()
-    #
-    #         print(f"th={th} cv={cv}")
-    #
-    #         if cv > best_cv:
-    #             best_th = th
-    #             best_cv = cv
-    #
-    #     print(f"best_th={best_th}")
-    #     print(f"best_cv={best_cv}")
-    #
-        # val_targets_df["is_new_individual"] = val_targets_df.target == "new_individual"
-        # val_scores = val_targets_df.groupby("is_new_individual").mean().T
-        # val_scores["adjusted_cv"] = val_scores[True] * 0.1 + val_scores[False] * 0.9
-        # best_th = val_scores["adjusted_cv"].idxmax()
-        # print(f"best_th_adjusted={best_th}")
-        #
-        # return best_th, best_cv
+    def create_and_search_index(self, embedding_size: int, train_embeddings: np.ndarray, val_embeddings: np.ndarray, k: int):
+        index = faiss.IndexFlatIP(embedding_size)
+        index.add(train_embeddings)
+        D, I = index.search(val_embeddings, k=k)  # noqa: E741
 
+        return D, I
 
-    def find_n_closest(self, cat: Cat, stored_cats: List[Cat], max_n: int = 5):
+    def __get_by_idx(self, l: List, idxs: List[int]):
+        return [l[idx] for idx in idxs if idx >= 0]
+    def create_distances_df(self,
+            check_cats: List[Cat], stored_cats: List[Cat], D: np.ndarray, I: np.ndarray):
+        distances_df = []
+        for i, cat in tqdm(enumerate(check_cats)):
+            target = self.__get_by_idx(stored_cats, list(I[i]))
+            distances = list(D[i])[:len(target)]
+            subset_preds = pd.DataFrame(np.stack([target, distances], axis=1), columns=["target", "distances"])
+
+        return []
+
+    def _get_embeddings(self, cats: List[Cat]):
+        all_embeddings = [c.embeddings for c in cats]
+        all_embeddings = np.vstack(all_embeddings)
+        all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
+        return all_embeddings
+
+    def find_n_closest(self, check_cats: List[Cat], stored_cats: List[Cat], max_n: int = 2):
+        emb_for_check = self._get_embeddings(check_cats)
+        stored_emb = self._get_embeddings(stored_cats)
+        D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)
+        self.create_distances_df(check_cats, stored_cats, D, I)
         return stored_cats
 
 
 if __name__ == '__main__':
     from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
+    from sklearn.preprocessing import normalize
 
-
-    matcher = CatsMatcher()
     config = tf_efficientnet_b0_config.model_config
     df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
     id_class_nums = df.cat_id.value_counts().sort_index().values
@@ -90,7 +63,6 @@ if __name__ == '__main__':
     model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
    # model.load_state_dict(torch.load(""))
     model.eval()
-    files = glob.glob("/Users/alinatamkevich/dev/recatizer/app/images/*")
 
     transform = transforms.Compose([
             transforms.Resize([128, 128]),
@@ -101,8 +73,15 @@ if __name__ == '__main__':
     data = torchvision.datasets.ImageFolder(root="/Users/alinatamkevich/dev/recatizer/app/", transform=transform)
 
     data_loader = torch.utils.data.DataLoader(dataset=data, batch_size=1, shuffle=True, num_workers=0)
+    all_embeddings = []
+    cats = []
     for data, l in iter(data_loader):
         pred = model(data, None)
+        emb = pred['embedding'].detach().numpy()
+        cats.append(Cat(_id= None, path="", quadkey="", embeddings=emb, additional_info=dict()))
+
+    matcher = CatsMatcher()
+    res = matcher.find_n_closest(cats[:2], cats)
 
     # for file in files:
     #     img = cv2.imread(file, 0)
