@@ -30,10 +30,10 @@ class CatsService(CatsServiceBase):
             logging.error("Cat wasn't saved!!!")
 
         #TODO start checking all people who searching their cats min(5 min, 5 new cats)
-        self.recheck_cats_in_search(cat.quadkey)
+        self.__recheck_cats_in_search(cat.quadkey)
         return True
 
-    def find_similar_cats(self, people: List[Person]):
+    def __find_similar_cats(self, people: List[Person]):
         qudkeys = list({person.quadkey for person in people})
         cats = self.cats_db.find({'quadkey': {"$in": qudkeys}})
         closest_cats = self.matcher.find_n_closest(people, cats)
@@ -42,9 +42,9 @@ class CatsService(CatsServiceBase):
                 print(cats_for_person)
                 # TODO Add sending to bot message
 
-    def recheck_cats_in_search(self, quadkey: str):
+    def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({'quadkey': quadkey})
-        self.find_similar_cats(people)
+        self.__find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
         self.people_db.delete({'chat_id': id})
@@ -53,7 +53,7 @@ class CatsService(CatsServiceBase):
         emb = self.predictor.predict(person.path)
         person.embeddings = emb
         person = self.people_db.save(person)
-        self.find_similar_cats([person])
+        self.__find_similar_cats([person])
 
 if __name__ == '__main__':
     service = CatsService(default_db_config)
