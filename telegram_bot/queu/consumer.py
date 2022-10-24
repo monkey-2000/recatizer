@@ -9,8 +9,7 @@ import json
 
 from kafka.errors import kafka_errors
 
-#from telegram_bot.configs.bot_cfgs import consumer_msg_cfd dont working from terminal
-from consumer_cfg import consumer_msg_cfd
+from telegram_bot.configs.bot_cfgs import consumer_msg_cfd
 
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"

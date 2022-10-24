@@ -1,90 +1,96 @@
 import glob
 from typing import List
-
 import cv2
 import faiss
 
+
 import numpy as np
 import torchvision.transforms as transforms
-
+from cv2 import data
 from torch.utils.data.dataloader import DataLoader
 import pandas as pd
 import torch
 import torchvision
 from tqdm import tqdm
 
-from inference.entities.cat import Cat
+from inference.entities.base import Entity
+from inference.entities.cat import Cat, ClosestCats
 from train.model.cats_model import HappyWhaleModel
+from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
+from sklearn.preprocessing import normalize
 
+from train.utils.image_utils import read_image, resize_image_if_needed
+
+
+class Predictor:
+    def __init__(self):
+        config = tf_efficientnet_b0_config.model_config
+        df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
+        id_class_nums = df.cat_id.value_counts().sort_index().values
+        self.image_size = tf_efficientnet_b0_config.image_size
+        self.model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
+        self.model.eval()
+    def _get_image(self, path: str):
+        image = read_image(path)
+        image = resize_image_if_needed(image, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
+        img = np.expand_dims(image, axis=0)
+        img = torch.Tensor(img).permute(0, 3, 1, 2)
+        return img
+    def predict(self, path: str):
+        data = self._get_image(path)
+        pred = self.model(data, None)
+        pred_np = pred['embedding'].detach().numpy()
+        return pred_np
 
 class CatsMatcher:
+    def __init__(self):
+        self.D, self.I = None, None
     def create_and_search_index(self, embedding_size: int, train_embeddings: np.ndarray, val_embeddings: np.ndarray, k: int):
-        index = faiss.IndexFlatIP(embedding_size)
+        index = faiss.IndexFlatL2(embedding_size)
         index.add(train_embeddings)
-        D, I = index.search(val_embeddings, k=k)  # noqa: E741
-
+        D, I = index.search(train_embeddings, k=k)  # noqa: E741
         return D, I
 
     def __get_by_idx(self, l: List, idxs: List[int]):
         return [l[idx] for idx in idxs if idx >= 0]
     def create_distances_df(self,
-            check_cats: List[Cat], stored_cats: List[Cat], D: np.ndarray, I: np.ndarray):
-        distances_df = []
-        for i, cat in tqdm(enumerate(check_cats)):
-            target = self.__get_by_idx(stored_cats, list(I[i]))
-            distances = list(D[i])[:len(target)]
-            subset_preds = pd.DataFrame(np.stack([target, distances], axis=1), columns=["target", "distances"])
+            for_check: List[Entity], stored_cats: List[Cat], D: np.ndarray, I: np.ndarray):
+        closest_cats = []
+        for i, entity in tqdm(enumerate(for_check)):
+            closest = self.__get_by_idx(stored_cats, list(I[i]))
+            distances = list(D[i])[:len(closest)]
+            closest_cats.append(ClosestCats(entity, closest, distances))
+        return closest_cats
 
-        return []
-
-    def _get_embeddings(self, cats: List[Cat]):
-        all_embeddings = [c.embeddings for c in cats]
+    def _get_embeddings(self, entities: List[Entity]):
+        all_embeddings = [c.embeddings for c in entities]
         all_embeddings = np.vstack(all_embeddings)
         all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
         return all_embeddings
 
-    def find_n_closest(self, check_cats: List[Cat], stored_cats: List[Cat], max_n: int = 2):
-        emb_for_check = self._get_embeddings(check_cats)
+    def filter_by_thr(self, closest: List[ClosestCats], thr: float):
+        for cl in closest:
+            filtered = [(c, d) for c, d in zip(cl.cats, cl.distances) if d < thr]
+            cl.cats = [f for f, _ in filtered]
+            cl.distances = [f for _, f in filtered]
+            yield cl
+    def find_n_closest(self, for_check: List[Entity], stored_cats: List[Cat], max_n: int = 5, thr: float = 0.5):
+        emb_for_check = self._get_embeddings(for_check)
         stored_emb = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)
-        self.create_distances_df(check_cats, stored_cats, D, I)
-        return stored_cats
+        closest = self.create_distances_df(for_check, stored_cats, D, I)
+        res =  list(self.filter_by_thr(closest, thr))
+        return res
 
 
 if __name__ == '__main__':
-    from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
-    from sklearn.preprocessing import normalize
-
-    config = tf_efficientnet_b0_config.model_config
-    df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
-    id_class_nums = df.cat_id.value_counts().sort_index().values
-    image_size = tf_efficientnet_b0_config.image_size
-
-    model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
-   # model.load_state_dict(torch.load(""))
-    model.eval()
-
-    transform = transforms.Compose([
-            transforms.Resize([128, 128]),
-            transforms.ToTensor()
-        ])
-
-
-    data = torchvision.datasets.ImageFolder(root="/Users/alinatamkevich/dev/recatizer/app/", transform=transform)
-
-    data_loader = torch.utils.data.DataLoader(dataset=data, batch_size=1, shuffle=True, num_workers=0)
-    all_embeddings = []
     cats = []
-    for data, l in iter(data_loader):
-        pred = model(data, None)
-        emb = pred['embedding'].detach().numpy()
-        cats.append(Cat(_id= None, path="", quadkey="", embeddings=emb, additional_info=dict()))
-
+    for i, file in enumerate(glob.glob('/Users/alinatamkevich/dev/recatizer/app/images/*.jpg')):
+        cat = Cat(_id=i, path=file, quadkey="", embeddings=None, additional_info=dict())
+        predictor = Predictor()
+        emb = predictor.predict(cat.path)
+        cat.embeddings = emb
+        cats.append(cat)
     matcher = CatsMatcher()
     res = matcher.find_n_closest(cats[:2], cats)
-
-    # for file in files:
-    #     img = cv2.imread(file, 0)
-    #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    #     img = cv2.resize(img, dsize=image_size)
-
+    print(res)
