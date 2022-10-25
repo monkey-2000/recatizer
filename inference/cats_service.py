@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-
+from aiogram import Bot
 from pymongo import MongoClient
 from inference.cats_service_base import CatsServiceBase
 from inference.configs.db_config import DBConfig, default_db_config
@@ -57,3 +57,5 @@ class CatsService(CatsServiceBase):
 
 if __name__ == '__main__':
     service = CatsService(default_db_config)
+    bot = Bot(token="5725782396:AAHCjlA4YKa0YlPudMBRNsWI1nEtEOClI5w")
+

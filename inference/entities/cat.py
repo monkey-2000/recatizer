@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
 from inference.entities.base import Entity
+from inference.entities.person import Person
 
 
 @dataclass
@@ -21,6 +22,6 @@ class Cat(Entity):
 
 @dataclass
 class ClosestCats:
-    entity: Entity
+    person: Person
     cats: List[Cat]
     distances: List[float]
