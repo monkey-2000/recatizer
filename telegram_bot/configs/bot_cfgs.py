@@ -26,8 +26,7 @@ consumer_msg_cfd = KafkaConsumerCfg(
 
 ##### project. not used now
 bot_config = TgBotConfig(
-                token = 'input BOT_TOKEN here',
-                find_cat_photo_dir = 'input FIND_ANSWER_DIR here',
-                saw_cat_photo_dir = 'input SAW_ANSWER_DIR here')
+                token="",
+                image_dir='/Users/alinatamkevich/dev/datasets/images')
 
 

@@ -9,7 +9,7 @@ from inference.entities.person import Person
 class MongoClientBase(ABC):
 
     @abstractmethod
-    def delete(self, id: str):
+    def delete(self, query: dict):
         pass
 
     @abstractmethod
@@ -22,8 +22,12 @@ class MongoClientBase(ABC):
 
 
 class CatsMongoClient(MongoClientBase):
+
     def __init__(self, db):
         self.cats_collection = db.cats
+
+    def delete(self, query: dict):
+        self.cats_collection.delete_one(dict)
 
     def find(self, query: dict):
         cursor = self.cats_collection.find(query)
@@ -44,7 +48,7 @@ class PeopleMongoClient(MongoClientBase):
         self.people_collection = db.people
 
     def delete(self, query: dict):
-        pass
+        self.people_collection.delete_one(dict)
 
     def save(self, person: Person) -> Optional[Person]:
         ans = self.people_collection.insert_one(person.as_json_wo_none())
@@ -52,3 +56,9 @@ class PeopleMongoClient(MongoClientBase):
         if not ans.acknowledged:
             return None
         return person
+
+    def find(self, query: dict):
+        cursor = self.people_collection.find(query)
+        people = list(cursor)
+        people = [Person.from_bson(p) for p in people]
+        return people
