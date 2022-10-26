@@ -5,8 +5,8 @@ from train.configs.base_config import *
 
 
 load_dotenv()
-database_path = os.environ['CAT_INDIVIDUALS_DS_PATH']
-project_dir = os.environ['PROJECT_DIR']
+database_path = os.environ.get('CAT_INDIVIDUALS_DS_PATH', '/Users/alinatamkevich/dev/datasets/cats_dataset')
+project_dir = os.environ.get('PROJECT_DIR', '/Users/alinatamkevich/dev/recatizer')
 
 
 tf_efficientnet_b0_config = Config(

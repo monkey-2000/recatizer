@@ -26,5 +26,4 @@ class KafkaConsumerCfg:
 @dataclass
 class TgBotConfig:
     token: str
-    find_cat_photo_dir: str
-    saw_cat_photo_dir: str
+    image_dir: str

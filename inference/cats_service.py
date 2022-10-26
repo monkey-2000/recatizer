@@ -1,53 +1,64 @@
+import logging
 from typing import List
 
-
 from pymongo import MongoClient
+
+from inference.bot_loader import DataUploader
 from inference.cats_service_base import CatsServiceBase
-from inference.configs.db_config import DBConfig
+from inference.configs.service_config import ServiceConfig, default_service_config
 from inference.entities.cat import Cat
 from inference.entities.person import Person
-from inference.matcher import CatsMatcher
+from inference.matcher import CatsMatcher, Predictor
+from inference.mongo_service import CatsMongoClient, PeopleMongoClient
 
 
 class CatsService(CatsServiceBase):
 
-    def __init__(self, config: DBConfig):
-        self.client = MongoClient(config.mongoDB_url)
+    def __init__(self, config: ServiceConfig):
+        client = MongoClient(config.mongoDB_url)
+        self.cats_db = CatsMongoClient(client.main)
+        self.people_db = PeopleMongoClient(client.main)
         self.matcher = CatsMatcher()
-        self.db = self.client.recatinizer
-        self.cats_collection = self.db.cats
-        self.people_collection = self.db.people
+        self.predictor = Predictor()
+        self.bot_loader = DataUploader(config.bot_token)
+
+
 
     def save_new_cat(self, cat: Cat) -> bool:
-        ans = self.cats_collection.insert_one(cat.as_json_wo_none())
-        cat._id = ans.inserted_id
-        return ans.acknowledged
+        emb = self.predictor.predict(cat.path)
+        cat.embeddings = emb.tolist()
+        ans = self.cats_db.save(cat)
+        if not ans:
+            logging.error("Cat wasn't saved!!!")
 
-    def find_similar_cats(self, cat: Cat) -> List[Cat]:
-        cursor = self.cats_collection.find()
-        cats = list(cursor)
-        cats = [Cat.from_bson(cat) for cat in cats]
-        return self.matcher.find_n_closest(cat, cats)
+        #TODO start checking all people who searching their cats min(5 min, 5 new cats)
+        self.__recheck_cats_in_search(cat.quadkey)
+        return True
 
-    def delete_user(self, id: str):
-        self.people_collection.delete_one({'_id': id})
+    def __find_similar_cats(self, people: List[Person]):
+        qudkeys = list({person.quadkey for person in people})
+        cats = self.cats_db.find({'quadkey': {"$in": qudkeys}})
+        if not cats:
+            return
+        closest_cats = self.matcher.find_n_closest(people, cats)
+        for cl in closest_cats:
+            if cl.cats:
+                self.bot_loader.upload(cl)
 
-    def add_user(self, person: Person) -> bool:
-        ans = self.people_collection.insert_one(person.as_json_wo_none())
-        person._id = ans.inserted_id
-        return ans.acknowledged
+    def __recheck_cats_in_search(self, quadkey: str):
+        people = self.people_db.find({'quadkey': quadkey})
+        self.__find_similar_cats(people)
+
+    def delete_user(self, chat_id: str):
+        self.people_db.delete({'chat_id': id})
+
+    def add_user(self, person: Person):
+        emb = self.predictor.predict(person.path)
+        person.embeddings = emb.tolist()
+        person = self.people_db.save(person)
+        self.__find_similar_cats([person])
 
 if __name__ == '__main__':
-    config = DBConfig(mongoDB_url="mongodb://localhost:27017/")
-    service = CatsService(config)
-    cat = Cat(_id =None, path="<LOCAL_PATH>", quadkey="03311101211",
-                      embeddings=[], additional_info=dict())
-    service.save_new_cat(cat)
-    res = service.find_similar_cats(cat)
+    service = CatsService(default_service_config)
 
-    person = Person(_id=None, chat_id="123", path="<LOCAL_PATH>", quadkey="03311101211",
-           embeddings=[], additional_info=dict())
 
-    service.add_user(person)
-    res2 = service.delete_user(person.chat_id)
-    print(res, res2)
