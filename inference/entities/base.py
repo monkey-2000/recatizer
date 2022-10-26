@@ -1,6 +1,6 @@
 import abc
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 
@@ -9,4 +9,4 @@ class Entity(abc.ABC):
     _id: Optional[str]
     path: str
     quadkey: str
-    embeddings: Optional[np.ndarray]
+    embeddings: Optional[List[float]]

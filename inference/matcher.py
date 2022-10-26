@@ -5,12 +5,8 @@ import faiss
 
 
 import numpy as np
-import torchvision.transforms as transforms
-from cv2 import data
-from torch.utils.data.dataloader import DataLoader
 import pandas as pd
 import torch
-import torchvision
 from tqdm import tqdm
 
 from inference.entities.base import Entity
@@ -48,7 +44,7 @@ class CatsMatcher:
     def create_and_search_index(self, embedding_size: int, train_embeddings: np.ndarray, val_embeddings: np.ndarray, k: int):
         index = faiss.IndexFlatL2(embedding_size)
         index.add(train_embeddings)
-        D, I = index.search(train_embeddings, k=k)  # noqa: E741
+        D, I = index.search(val_embeddings, k=k)  # noqa: E741
         return D, I
 
     def __get_by_idx(self, l: List, idxs: List[int]):
@@ -64,7 +60,7 @@ class CatsMatcher:
 
     def _get_embeddings(self, entities: List[Entity]):
         all_embeddings = [c.embeddings for c in entities]
-        all_embeddings = np.vstack(all_embeddings)
+        all_embeddings = np.float32(np.vstack(all_embeddings))
         all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
         return all_embeddings
 
@@ -74,7 +70,7 @@ class CatsMatcher:
             cl.cats = [f for f, _ in filtered]
             cl.distances = [f for _, f in filtered]
             yield cl
-    def find_n_closest(self, for_check: List[Entity], stored_cats: List[Cat], max_n: int = 5, thr: float = 0.5):
+    def find_n_closest(self, for_check: List[Entity], stored_cats: List[Cat], max_n: int = 5, thr: float = 1):
         emb_for_check = self._get_embeddings(for_check)
         stored_emb = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)

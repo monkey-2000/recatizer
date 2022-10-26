@@ -1,10 +1,11 @@
 import logging
 from typing import List
 
-from aiogram import Bot
 from pymongo import MongoClient
+
+from inference.bot_loader import DataUploader
 from inference.cats_service_base import CatsServiceBase
-from inference.configs.db_config import DBConfig, default_db_config
+from inference.configs.service_config import ServiceConfig, default_service_config
 from inference.entities.cat import Cat
 from inference.entities.person import Person
 from inference.matcher import CatsMatcher, Predictor
@@ -13,18 +14,19 @@ from inference.mongo_service import CatsMongoClient, PeopleMongoClient
 
 class CatsService(CatsServiceBase):
 
-    def __init__(self, config: DBConfig):
+    def __init__(self, config: ServiceConfig):
         client = MongoClient(config.mongoDB_url)
-        self.cats_db = CatsMongoClient(client.recatinizer)
-        self.people_db = PeopleMongoClient(client.recatinizer)
+        self.cats_db = CatsMongoClient(client.main)
+        self.people_db = PeopleMongoClient(client.main)
         self.matcher = CatsMatcher()
         self.predictor = Predictor()
+        self.bot_loader = DataUploader(config.bot_token)
 
 
 
     def save_new_cat(self, cat: Cat) -> bool:
         emb = self.predictor.predict(cat.path)
-        cat.embeddings = emb
+        cat.embeddings = emb.tolist()
         ans = self.cats_db.save(cat)
         if not ans:
             logging.error("Cat wasn't saved!!!")
@@ -36,11 +38,12 @@ class CatsService(CatsServiceBase):
     def __find_similar_cats(self, people: List[Person]):
         qudkeys = list({person.quadkey for person in people})
         cats = self.cats_db.find({'quadkey': {"$in": qudkeys}})
+        if not cats:
+            return
         closest_cats = self.matcher.find_n_closest(people, cats)
-        for person, cats_for_person in zip(people, closest_cats):
-            if cats_for_person:
-                print(cats_for_person)
-                # TODO Add sending to bot message
+        for cl in closest_cats:
+            if cl.cats:
+                self.bot_loader.upload(cl)
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({'quadkey': quadkey})
@@ -51,11 +54,11 @@ class CatsService(CatsServiceBase):
 
     def add_user(self, person: Person):
         emb = self.predictor.predict(person.path)
-        person.embeddings = emb
+        person.embeddings = emb.tolist()
         person = self.people_db.save(person)
         self.__find_similar_cats([person])
 
 if __name__ == '__main__':
-    service = CatsService(default_db_config)
-    bot = Bot(token="5725782396:AAHCjlA4YKa0YlPudMBRNsWI1nEtEOClI5w")
+    service = CatsService(default_service_config)
+
 

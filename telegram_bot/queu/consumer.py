@@ -1,6 +1,3 @@
-
-import os
-import time
 import logging
 
 from kafka import KafkaConsumer
@@ -10,7 +7,7 @@ import json
 from kafka.consumer.fetcher import ConsumerRecord
 
 from inference.cats_service import CatsService
-from inference.configs.db_config import default_db_config
+from inference.configs.service_config import default_service_config
 from inference.entities.cat import Cat
 from inference.entities.person import Person
 
@@ -41,7 +38,7 @@ class MsgConsumer:
         self.pool_cache_limit = 1
         self.stop_processing = False
         self.pool = LimitedMultiprocessingPool(processes=2)
-        self.inference = CatsService(default_db_config)
+        self.inference = CatsService(default_service_config)
 
     def set_stop_processing(self, *args, **kwargs):
         self.stop_processing = True
