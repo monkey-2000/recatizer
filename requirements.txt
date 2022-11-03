@@ -6,14 +6,10 @@ requests==2.22.0
 flake8
 pandas==1.5.0
 sklearn
-numpy
-pandas
 tqdm
 faiss-cpu
 timm
-whatimage==0.0.3
 pyheif==0.7.0
 sklearn
 albumentations==1.3.0
-
 aiogram
