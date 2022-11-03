@@ -12,5 +12,3 @@ tqdm
 faiss-cpu
 opencv-python
 timm
-kafka-python
-timm
