@@ -8,14 +8,3 @@ pandas==1.5.0
 sklearn
 numpy
 pandas
-tqdm
-faiss-cpu
-opencv-python
-timm
-kafka-python
-timm
-opencv-python==4.6.0.66
-sklearn
-albumentations==1.3.0
-pymongo
-aiogram
