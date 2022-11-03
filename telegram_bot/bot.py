@@ -76,4 +76,5 @@ async def enter_sex(message: types.Message, state: FSMContext):
     await message.answer("Thank you !!!")
 
 if __name__ == '__main__':
+    print("Start bot !!")
     executor.start_polling(dp, skip_updates=True, timeout=10*60)
