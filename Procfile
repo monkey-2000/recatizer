@@ -1,1 +1,1 @@
-app: python3 script.py
+app: python3 telegram_bot/bot.py
