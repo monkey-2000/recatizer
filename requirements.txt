@@ -10,5 +10,3 @@ numpy
 pandas
 tqdm
 faiss-cpu
-opencv-python
-timm
