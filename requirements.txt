@@ -8,3 +8,9 @@ pandas==1.5.0
 sklearn
 numpy
 pandas
+tqdm
+faiss-cpu
+opencv-python
+timm
+kafka-python
+timm
