@@ -2,3 +2,6 @@ Sphinx
 coverage
 python-telegram-bot==13.11
 aiogram
+pyTelegramBotAPI
+pymongo
+motor

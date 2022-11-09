@@ -4,14 +4,13 @@ import uuid
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
 from aiogram.dispatcher import FSMContext
-from dotenv import load_dotenv
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from telegram_bot.configs.bot_cfgs import bot_config
 from telegram_bot.queu.producer import Producer
 
-load_dotenv()
-bot = Bot(token=bot_config.token)
+
+bot = Bot(token=os.environ.get('BOT_TOKEN'))
 mongodb_name = "answer_question_aiogram"
 storage = MongoStorage(db_name=mongodb_name)
 kafka_producer = Producer()
