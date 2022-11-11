@@ -7,7 +7,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from telegram_bot.configs.bot_cfgs import bot_config
-from telegram_bot.queu.producer import Producer
+from telegram_bot.queue.producer import Producer
 
 
 bot = Bot(token=os.environ.get('BOT_TOKEN'))
