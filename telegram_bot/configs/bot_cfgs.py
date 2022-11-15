@@ -28,10 +28,10 @@ consumer_msg_cfd = KafkaConsumerCfg(
 ##### project. not used now
 bot_config = TgBotConfig(
                 token=os.environ.get('BOT_TOKEN'),
-                image_dir='/Users/alinatamkevich/dev/datasets/images',
+                image_dir='',
                 s3_client_config=S3ClientConfig(
-                    aws_access_key_id="YCAJEaaRLcHjpZYMUKd4XJNXA",
-                    aws_secret_access_key="YCNpegHr2kakpVPPzi75JGl5YellGscH9OZKX-nx"
+                    aws_access_key_id="",
+                    aws_secret_access_key=""
                 )
 )
 
