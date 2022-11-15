@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
@@ -29,7 +30,7 @@ class MsgConsumer:
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="earliest",
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=['51.250.29.33:9092'],
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
             key_deserializer=lambda v: json.loads(v.decode('ascii')),
@@ -70,7 +71,7 @@ class MsgConsumer:
 if __name__ == '__main__':
 
     logger.setLevel('INFO')
-    fh = logging.FileHandler('consumer.log', 'w', 'utf-8')
+    fh = logging.StreamHandler(sys.stdout)
     fh.setFormatter(logging.Formatter(_log_format))
     fh.setLevel(level=logging.INFO)
 

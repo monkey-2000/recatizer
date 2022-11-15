@@ -1,4 +1,5 @@
 import json
+import os
 
 from telegram_bot.configs.bot_base_configs import *
 
@@ -26,7 +27,12 @@ consumer_msg_cfd = KafkaConsumerCfg(
 
 ##### project. not used now
 bot_config = TgBotConfig(
-                token="",
-                image_dir='/Users/alinatamkevich/dev/datasets/images')
+                token=os.environ.get('BOT_TOKEN'),
+                image_dir='/Users/alinatamkevich/dev/datasets/images',
+                s3_client_config=S3ClientConfig(
+                    aws_access_key_id="YCAJEaaRLcHjpZYMUKd4XJNXA",
+                    aws_secret_access_key="YCNpegHr2kakpVPPzi75JGl5YellGscH9OZKX-nx"
+                )
+)
 
 

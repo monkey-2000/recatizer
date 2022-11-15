@@ -24,6 +24,13 @@ class KafkaConsumerCfg:
 
 
 @dataclass
+class S3ClientConfig:
+    aws_access_key_id: str
+    aws_secret_access_key: str
+
+@dataclass
 class TgBotConfig:
     token: str
     image_dir: str
+    s3_client_config: S3ClientConfig
+

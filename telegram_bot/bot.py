@@ -7,13 +7,14 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from telegram_bot.configs.bot_cfgs import bot_config
-from telegram_bot.queue.producer import Producer
+from telegram_bot.cats_queue.producer import Producer
+from telegram_bot.s3_client import YandexS3Client
 
-
-bot = Bot(token=os.environ.get('BOT_TOKEN'))
+bot = Bot(token="5725782396:AAHCjlA4YKa0YlPudMBRNsWI1nEtEOClI5w")#bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
+s3_client = YandexS3Client(bot_config.s3_client_config.aws_access_key_id, bot_config.s3_client_config.aws_secret_access_key)
 class QStates(StatesGroup):
     saw = State()
     find = State()
@@ -51,27 +52,28 @@ def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str
                  'additional_info': additional_info,
                  'quadkey': quadkey}
 
+async def save_to_s3(message):
+    image_name = "{0}.jpg".format(str(uuid.uuid4()))
+    os.makedirs(bot_config.image_dir, exist_ok=True)
+    image_path = os.path.join(bot_config.image_dir, image_name)
+    await message.photo[-1].download(image_path)
+    s3_path = s3_client.save_image(image_path)
+    os.remove(image_path)
+    return s3_path
+
 @dp.message_handler(state=QStates.find, content_types=['photo'])
 async def process_find(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
-    id = str(uuid.uuid4())
-    image_name = "{0}.jpg".format(id)
-    os.makedirs("/tmp/data", exist_ok=True)
-    image_path = os.path.join("/tmp/data", image_name)
-    await message.photo[-1].download(image_path)
-    kafka_message = to_message(message.from_user.id, image_path, additional_info)
+    s3_path = await save_to_s3(message)
+    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
     kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
     await message.answer("Thanks! We notify you when we'll get any news")
 
 @dp.message_handler(state=QStates.saw, content_types=['photo'])
 async def process_saw(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
-    id = str(uuid.uuid4())
-    image_name = "{0}.jpg".format(id)
-    os.makedirs("/tmp/data", exist_ok=True)
-    image_path = os.path.join("/tmp/data", image_name)
-    await message.photo[-1].download(image_path)
-    kafka_message = to_message(message.from_user.id, image_path, additional_info)
+    s3_path = await save_to_s3(message)
+    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
     kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
     await message.answer("Thank you !!!")
 

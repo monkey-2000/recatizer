@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 from inference.entities.base import Entity
 from inference.entities.cat import Cat, ClosestCats
+from telegram_bot.configs.bot_base_configs import S3ClientConfig
+from telegram_bot.s3_client import YandexS3Client
 from train.model.cats_model import HappyWhaleModel
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
 from sklearn.preprocessing import normalize
@@ -19,15 +21,16 @@ from train.utils.image_utils import read_image, resize_image_if_needed
 
 
 class Predictor:
-    def __init__(self):
+    def __init__(self, s3_config: S3ClientConfig):
         config = tf_efficientnet_b0_config.model_config
         df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
         id_class_nums = df.cat_id.value_counts().sort_index().values
         self.image_size = tf_efficientnet_b0_config.image_size
         self.model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
         self.model.eval()
+        self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
     def _get_image(self, path: str):
-        image = read_image(path)
+        image = self.s3_client.load_image(path)
         image = resize_image_if_needed(image, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
         img = np.expand_dims(image, axis=0)
         img = torch.Tensor(img).permute(0, 3, 1, 2)
@@ -75,18 +78,5 @@ class CatsMatcher:
         stored_emb = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)
         closest = self.create_distances_df(for_check, stored_cats, D, I)
-        res =  list(self.filter_by_thr(closest, thr))
+        res = list(self.filter_by_thr(closest, thr))
         return res
-
-
-if __name__ == '__main__':
-    cats = []
-    for i, file in enumerate(glob.glob('/Users/alinatamkevich/dev/recatizer/app/images/*.jpg')):
-        cat = Cat(_id=i, path=file, quadkey="", embeddings=None, additional_info=dict())
-        predictor = Predictor()
-        emb = predictor.predict(cat.path)
-        cat.embeddings = emb
-        cats.append(cat)
-    matcher = CatsMatcher()
-    res = matcher.find_n_closest(cats[:2], cats)
-    print(res)
