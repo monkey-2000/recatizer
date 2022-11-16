@@ -1,18 +1,30 @@
 #!/bin/bash
-
-#screen -d -m -S ZOOKIPER  -t shell
-#screen -d -m -S KAFKA  -t shell
+# Run from recatizer main dir ./run_scripts/start_service.sh
 
 curdir=$(pwd)
 echo текущая директория $curdir
 cd ~art
 cd ~/kafka/kafka_2.13-3.3.1
-echo текущая директория 
-pwd 
+#echo текущая директория
+#pwd
 
 screen -dmS ZOOKIPER  bash -c './bin/zookeeper-server-start.sh config/zookeeper.properties'
 screen -dmS KAFKA bash -c './bin/kafka-server-start.sh config/server.properties'
 cd $curdir
+echo KAFKA and ZOOKIPER are started
+
+
+if [ -n "$1" ]
+then
+export PYTHONPATH=$1
+python3 telegram_bot/cats_queue/consumer.py
+else
+echo "Please set project dir. "
+fi
+
+
+
+
 #chmod a+x ./bin/zookeeper-server-start.sh
 
 #screen -dmS ZOO  

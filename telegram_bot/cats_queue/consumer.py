@@ -4,7 +4,6 @@ import sys
 from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
 import json
-
 from kafka.consumer.fetcher import ConsumerRecord
 
 from inference.cats_service import CatsService

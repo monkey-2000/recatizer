@@ -1,9 +1,7 @@
-import glob
 from typing import List
 import cv2
 import faiss
-
-
+from sklearn.preprocessing import normalize
 import numpy as np
 import pandas as pd
 import torch
@@ -15,8 +13,6 @@ from telegram_bot.configs.bot_base_configs import S3ClientConfig
 from telegram_bot.s3_client import YandexS3Client
 from train.model.cats_model import HappyWhaleModel
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
-from sklearn.preprocessing import normalize
-
 from train.utils.image_utils import read_image, resize_image_if_needed
 
 

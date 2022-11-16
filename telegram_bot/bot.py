@@ -6,11 +6,13 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
+
 from telegram_bot.configs.bot_cfgs import bot_config
 from telegram_bot.cats_queue.producer import Producer
 from telegram_bot.s3_client import YandexS3Client
 
-bot = Bot(token="5725782396:AAHCjlA4YKa0YlPudMBRNsWI1nEtEOClI5w")#bot_config.token)
+
+bot = Bot(token=bot_config.token)#bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)

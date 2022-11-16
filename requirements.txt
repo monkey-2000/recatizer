@@ -6,3 +6,4 @@ pyTelegramBotAPI
 pymongo
 motor
 kafka-python
+python-dotenv=0.21.0

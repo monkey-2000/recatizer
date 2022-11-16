@@ -3,7 +3,6 @@ import cv2
 import boto3
 import numpy as np
 
-from telegram_bot.configs.bot_cfgs import bot_config
 
 class YandexS3Client:
     def __init__(self, access_key: str, secret_key: str, bucket_name: str = "recatizer-bucket"):
@@ -21,7 +20,6 @@ class YandexS3Client:
         s3_path = os.path.join("users_data", os.path.basename(image_path))
         self.s3.upload_file(image_path, self.bucket_name, s3_path)
         return s3_path
-
 
     def load_image(self, image_path: str):
         get_object_response = self.s3.get_object(Bucket=self.bucket_name, Key=image_path)
