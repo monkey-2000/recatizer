@@ -6,3 +6,4 @@ pyTelegramBotAPI
 pymongo
 motor
 kafka-python
+mercantile
