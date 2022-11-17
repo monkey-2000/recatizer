@@ -7,4 +7,3 @@ pymongo
 motor
 kafka-python
 mercantile
-mercantile
