@@ -16,7 +16,7 @@ class Cat(Entity):
 
     @staticmethod
     def from_bson(bson):
-        return Cat(_id=bson["_id"], path=bson["path"], quadkey=bson["quadkey"],
+        return Cat(_id=bson["_id"], paths=bson["paths"], quadkey=bson["quadkey"],
                    embeddings=bson["embeddings"], additional_info=bson["additional_info"])
 
 

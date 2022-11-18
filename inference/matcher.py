@@ -47,7 +47,12 @@ class CatsMatcher:
         return D, I
 
     def __get_by_idx(self, l: List, idxs: List[int]):
-        return [l[idx] for idx in idxs if idx >= 0]
+        _idxs = []
+        for idx in idxs:
+            if idx >= 0:
+                _idxs.append(l[idx])
+        return _idxs
+      #  return [l[idx] for idx in idxs if idx >= 0]
     def create_distances_df(self,
             for_check: List[Entity], stored_cats: List[Cat], D: np.ndarray, I: np.ndarray):
         closest_cats = []
@@ -58,10 +63,20 @@ class CatsMatcher:
         return closest_cats
 
     def _get_embeddings(self, entities: List[Entity]):
-        all_embeddings = [c.embeddings for c in entities]
+
+        all_embeddings = []
+        embeddings_belonging = []
+
+        for entity_id, entity in enumerate(entities):
+            for embedding in entity.embeddings:
+                all_embeddings.append(embedding)
+                embeddings_belonging.append(entity)
+
+        # all_embeddings = [c.embeddings for c in entities]
         all_embeddings = np.float32(np.vstack(all_embeddings))
         all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
-        return all_embeddings
+        return all_embeddings, embeddings_belonging
+
 
     def filter_by_thr(self, closest: List[ClosestCats], thr: float):
         for cl in closest:
@@ -69,10 +84,23 @@ class CatsMatcher:
             cl.cats = [f for f, _ in filtered]
             cl.distances = [f for _, f in filtered]
             yield cl
+
+    @staticmethod
+    def reduce_closest_cats(closest_cats):
+        reduced_closest_cats = {}
+        for cat in closest_cats:
+            if id(cat) not in reduced_closest_cats:
+                reduced_closest_cats[id(cat)] = cat
+        return reduced_closest_cats.values()
+
     def find_n_closest(self, for_check: List[Entity], stored_cats: List[Cat], max_n: int = 5, thr: float = 1):
-        emb_for_check = self._get_embeddings(for_check)
-        stored_emb = self._get_embeddings(stored_cats)
+        emb_for_check, _ = self._get_embeddings(for_check)
+        stored_emb, stored_emb_belonging = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)
-        closest = self.create_distances_df(for_check, stored_cats, D, I)
-        res = list(self.filter_by_thr(closest, thr))
+        #closest = self.create_distances_df(for_check, stored_cats, D, I)
+        persons_and_matched_cats = self.create_distances_df(for_check, stored_emb_belonging, D, I)
+        for person_id, person in enumerate(persons_and_matched_cats):
+            person.cats = self.reduce_closest_cats(person.cats)
+            persons_and_matched_cats[person_id] = person
+        res = list(self.filter_by_thr(persons_and_matched_cats, thr))
         return res

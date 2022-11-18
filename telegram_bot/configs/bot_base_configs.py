@@ -32,5 +32,6 @@ class S3ClientConfig:
 class TgBotConfig:
     token: str
     image_dir: str
+    kafka_server: list
     s3_client_config: S3ClientConfig
 

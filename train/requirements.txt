@@ -1,0 +1,3 @@
+cv_models
+tensorboardX==2.5.1
+albumentations

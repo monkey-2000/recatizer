@@ -10,6 +10,7 @@ from inference.cats_service import CatsService
 from inference.configs.service_config import default_service_config
 from inference.entities.cat import Cat
 from inference.entities.person import Person
+from telegram_bot.configs.bot_cfgs import bot_config
 
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
@@ -29,7 +30,7 @@ class MsgConsumer:
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="earliest",
-            bootstrap_servers=['51.250.29.33:9092'],
+            bootstrap_servers=bot_config.kafka_server,
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
             key_deserializer=lambda v: json.loads(v.decode('ascii')),
@@ -47,10 +48,10 @@ class MsgConsumer:
         topic = msg.topic
         message = msg.value
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                   embeddings=None, chat_id=message["user_id"]))
+            self.inference.add_user(Person(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
+                   embeddings=None, chat_id=message["user_id"])) # ADD additional_info=message["additional_info"]
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, path=message['image_path'], quadkey=message["quadkey"],
+            self.inference.save_new_cat(Cat(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
                                            embeddings=None, additional_info=message["additional_info"]))
 
     def main_loop(self):

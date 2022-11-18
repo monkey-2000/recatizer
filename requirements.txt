@@ -6,5 +6,4 @@ pyTelegramBotAPI
 pymongo
 motor
 kafka-python
-mercantile
-mercantile
+python-dotenv=0.21.0
