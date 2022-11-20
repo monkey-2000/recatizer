@@ -73,13 +73,12 @@ class ModelExporter:
 
 if __name__ == "__main__":
     argparser = ArgumentParser()
-    argparser.add_argument("--task", type=str, help="Name of the task that will be run.", required=True)
-    argparser.add_argument("--to", type=str, choices=("onnx", "dldt"), required=True)
+    argparser.add_argument("--to", type=str, choices=("onnx", "dldt"), default="onnx")
     argparser.add_argument("--random_weights", type=str, required=False, default="0")
     argparser.add_argument("--config_name", type=str, required=False)
-    argparser.add_argument("--save_path", type=str, help="Path to save", required=True)
-    argparser.add_argument("--model_weights", type=str, help="model weights path", required=True)
-    argparser.add_argument("--model_name", help="model name", required=True)
+    argparser.add_argument("--save_path", type=str, help="Path to save", default="/Users/alinatamkevich/dev/models")
+    argparser.add_argument("--model_weights", type=str, help="model weights path", default=None)
+    argparser.add_argument("--model_name", help="model name", default="recatinizer")
 
     argparser.add_argument("--rows_cols", type=str, required=True)
     argparser.add_argument("--channels", type=str, default=3)
