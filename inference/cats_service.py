@@ -53,6 +53,7 @@ class CatsService(CatsServiceBase):
         self.people_db.delete({'chat_id': id})
 
     def add_user(self, person: Person):
+        #for path in person.path: !!!
         emb = self.predictor.predict(person.path)
         person.embeddings = emb.tolist()
         person = self.people_db.save(person)
