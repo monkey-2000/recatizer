@@ -30,5 +30,5 @@ class CatsTask(BaseTask):
     def get_model(self):
         df = pd.read_csv(self.dataset_config.train_path)
         id_class_nums = df.cat_id.value_counts().sort_index().values
-        model = HappyWhaleModel(self.model_config, self.device, id_class_nums)
+        model = HappyWhaleModel(self.model_config, self.device, is_train_stage=True, id_class_nums=id_class_nums)
         return model

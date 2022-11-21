@@ -19,10 +19,8 @@ from train.utils.image_utils import read_image, resize_image_if_needed
 class Predictor:
     def __init__(self, s3_config: S3ClientConfig):
         config = tf_efficientnet_b0_config.model_config
-        df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
-        id_class_nums = df.cat_id.value_counts().sort_index().values
         self.image_size = tf_efficientnet_b0_config.image_size
-        self.model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
+        self.model = HappyWhaleModel(config, torch.device('cpu'), is_train_stage=False)
         self.model.eval()
         self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
     def _get_image(self, path: str):

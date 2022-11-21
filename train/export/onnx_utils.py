@@ -47,6 +47,6 @@ def polish_model(model, optimize=True):
     onnx.helper.strip_doc_string(model)
     model = onnx.shape_inference.infer_shapes(model)
     if optimize:
-        model = onnx.optimizer.optimize(model, BASIC_FUSE_OPTIMIZATIONS)
+        model = onnx.onnxoptimizer.optimize(model, BASIC_FUSE_OPTIMIZATIONS)
     onnx.checker.check_model(model)
     return model

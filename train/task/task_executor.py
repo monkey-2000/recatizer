@@ -125,7 +125,7 @@ class TaskRunner:
 
         if len(input) != 1:
             warnings.warn("make sure your model has list of inputs")
-        model_output = self.model(*input, training)
+        model_output = self.model(input)
         assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
 
         loss = self.criterion.calculate(model_output, data, training)
