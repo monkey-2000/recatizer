@@ -48,7 +48,8 @@ async def saw_cat(message: types.Message, state: FSMContext):
                          reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(QStates.saw)
 
-def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
+def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str):
+#def to_message(user_id: str, image_path: str, additional_info: str, quadkey='no'):
     return {'user_id': user_id,
                  'image_path': image_path,
                  'additional_info': additional_info,
@@ -58,6 +59,7 @@ async def save_to_s3(message):
     image_name = "{0}.jpg".format(str(uuid.uuid4()))
     os.makedirs(bot_config.image_dir, exist_ok=True)
     image_path = os.path.join(bot_config.image_dir, image_name)
+    #image_path = image_name
     await message.photo[-1].download(image_path)
     s3_path = s3_client.save_image(image_path)
     os.remove(image_path)
@@ -67,16 +69,29 @@ async def save_to_s3(message):
 async def process_find(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
+    kafka_message = to_message(
+            str(message.from_user.id),
+            s3_path,
+            additional_info,
+            'no_quad'
+    )
+
+    msg_id = kafka_message['user_id']
+    kafka_producer.send(value=kafka_message, key=msg_id, topic='find_cat')
     await message.answer("Thanks! We notify you when we'll get any news")
 
 @dp.message_handler(state=QStates.saw, content_types=['photo'])
 async def process_saw(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
+    kafka_message = to_message(
+        message.from_user.id,
+        s3_path,
+        additional_info,
+        'no_quad'
+    )
+    msg_id = kafka_message['user_id']
+    kafka_producer.send(value=kafka_message, key=msg_id, topic='saw_cat')
     await message.answer("Thank you !!!")
 
 if __name__ == '__main__':
