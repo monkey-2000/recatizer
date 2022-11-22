@@ -15,11 +15,13 @@ from train.utils.image_utils import  resize_image_if_needed
 
 
 class Predictor:
-    def __init__(self, s3_config: S3ClientConfig, models_pth: str):
+    def __init__(self, s3_config: S3ClientConfig, models_path: str, local_model_path: str):
         self.image_size = tf_efficientnet_b0_config.image_size
-        self.model = CatIrClassificator(models_pth)
         self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
-
+        self.s3_client.download_file(models_path, local_model_path)
+        self.model = CatIrClassificator(local_model_path)
+    def _download_model(self, path: str):
+        self.s3_client.download_file(path)
     def _images_to_tensor(self, img):
         """ As input is image, img always comes in channels_last format """
         shape = img.shape

@@ -7,7 +7,6 @@ class CatIrClassificator:
         self.model = ie.compile_model(model=model_ir, device_name="CPU")
         self.outputs = self.model.output(0)
 
-
     def predict(self, input_image):
         res_ir = self.model([input_image])[self.outputs]
         return res_ir

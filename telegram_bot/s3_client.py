@@ -28,3 +28,10 @@ class YandexS3Client:
         image = cv2.imdecode(image_data, cv2.IMREAD_UNCHANGED)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         return image
+
+    def download_file(self, file_path: str, result_path: str):
+        self.s3.download_file(
+            self.bucket_name,
+            file_path,
+            result_path
+    )
