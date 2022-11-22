@@ -3,8 +3,6 @@ import cv2
 import faiss
 from sklearn.preprocessing import normalize
 import numpy as np
-import pandas as pd
-import torch
 from tqdm import tqdm
 
 from inference.entities.base import Entity
@@ -12,14 +10,12 @@ from inference.entities.cat import Cat, ClosestCats
 from inference.ir_models.ir_cats_cls import CatIrClassificator
 from telegram_bot.configs.bot_base_configs import S3ClientConfig
 from telegram_bot.s3_client import YandexS3Client
-from train.model.cats_model import HappyWhaleModel
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
-from train.utils.image_utils import read_image, resize_image_if_needed
+from train.utils.image_utils import  resize_image_if_needed
 
 
 class Predictor:
     def __init__(self, s3_config: S3ClientConfig, models_pth: str):
-        config = tf_efficientnet_b0_config.model_config
         self.image_size = tf_efficientnet_b0_config.image_size
         self.model = CatIrClassificator(models_pth)
         self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
