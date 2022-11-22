@@ -29,7 +29,7 @@ class MsgConsumer:
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="earliest",
-            bootstrap_servers=['51.250.29.33:9092'],
+            bootstrap_servers=['localhost:9092'],
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
             key_deserializer=lambda v: json.loads(v.decode('ascii')),

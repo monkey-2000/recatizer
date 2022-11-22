@@ -15,4 +15,3 @@ class ModelBuilder:
         self.model = self.model_mapping[self.model_name](self.config, torch.device('cpu'), is_train_stage=False)
         self.model.eval()
         return self.model
-        # return  backbone.load_backbone("tf_efficientnet_b0", pretrained=True).cpu().eval()

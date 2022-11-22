@@ -31,18 +31,18 @@ class ModelExporter:
         import torch
         cpu_device = torch.device("cpu")
 
-        # try:
-        #     if model is None:
-        #         model = torch.load(weights_path, map_location=str(cpu_device))
-        #     else:
-        #         model_weights = torch.load(weights_path, map_location=str(cpu_device))["state_dict"]
-        #         model_weights = {k: v for k, v in model_weights.items() if k in model.state_dict()}
-        #         print("loaded weights: ", weights_path)
-        #         model.load_state_dict(model_weights, strict=True)
-        # except (FileNotFoundError, AttributeError) as e:
-        #     if not allow_random_weights:
-        #         raise FileNotFoundError("Weights not found: " + str(e))
-
+        try:
+            if model is None:
+                model = torch.load(weights_path, map_location=str(cpu_device))
+            else:
+                model_weights = torch.load(weights_path, map_location=str(cpu_device))["state_dict"]
+                model_weights = {k: v for k, v in model_weights.items() if k in model.state_dict()}
+                print("loaded weights: ", weights_path)
+                model.load_state_dict(model_weights, strict=True)
+        except (FileNotFoundError, AttributeError) as e:
+            if not allow_random_weights:
+                raise FileNotFoundError("Weights not found: " + str(e))
+        #
         # To be sure that model and weights on CPU
         model = model.to(cpu_device)
         model.eval()

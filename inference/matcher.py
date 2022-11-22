@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from inference.entities.base import Entity
 from inference.entities.cat import Cat, ClosestCats
+from inference.ir_models.ir_cats_cls import CatIrClassificator
 from telegram_bot.configs.bot_base_configs import S3ClientConfig
 from telegram_bot.s3_client import YandexS3Client
 from train.model.cats_model import HappyWhaleModel
@@ -17,22 +18,30 @@ from train.utils.image_utils import read_image, resize_image_if_needed
 
 
 class Predictor:
-    def __init__(self, s3_config: S3ClientConfig):
+    def __init__(self, s3_config: S3ClientConfig, models_pth: str):
         config = tf_efficientnet_b0_config.model_config
         self.image_size = tf_efficientnet_b0_config.image_size
-        self.model = HappyWhaleModel(config, torch.device('cpu'), is_train_stage=False)
-        self.model.eval()
+        self.model = CatIrClassificator(models_pth)
         self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
-    def _get_image(self, path: str):
-        image = self.s3_client.load_image(path)
-        image = resize_image_if_needed(image, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
+
+    def _images_to_tensor(self, img):
+        """ As input is image, img always comes in channels_last format """
+        shape = img.shape
+        assert len(shape) == 3 or len(shape) == 4, "Expecting tensor with dims 3 or 4"
+
+        # Update single image to batch of size 1
+        if len(shape) == 3:
+            img = np.expand_dims(img, axis=0)
+
+        image = resize_image_if_needed(img, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
         img = np.expand_dims(image, axis=0)
-        img = torch.Tensor(img).permute(0, 3, 1, 2)
         return img
+
     def predict(self, path: str):
-        data = self._get_image(path)
-        pred = self.model(data, None)
-        pred_np = pred['embedding'].detach().numpy()
+        data = self.s3_client.load_image(path)
+        data = self._images_to_tensor(data)
+        pred = self.model.predict(data)
+        pred_np = pred.detach().numpy()
         return pred_np
 
 class CatsMatcher:

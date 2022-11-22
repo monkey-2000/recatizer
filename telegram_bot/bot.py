@@ -12,7 +12,7 @@ from telegram_bot.cats_queue.producer import Producer
 from telegram_bot.s3_client import YandexS3Client
 
 
-bot = Bot(token=bot_config.token)#bot_config.token)
+bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
@@ -68,7 +68,7 @@ async def process_find(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
     kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
+    kafka_producer.send(value=kafka_message, key=message.from_user.id, topic='find_cat')
     await message.answer("Thanks! We notify you when we'll get any news")
 
 @dp.message_handler(state=QStates.saw, content_types=['photo'])
@@ -76,7 +76,7 @@ async def process_saw(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
     kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
+    kafka_producer.send(value=kafka_message, key=message.from_user.id, topic='saw_cat')
     await message.answer("Thank you !!!")
 
 if __name__ == '__main__':

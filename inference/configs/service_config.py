@@ -13,6 +13,7 @@ class ServiceConfig:
     mongoDB_url: str
     bot_token: str
     s3_client_config: S3ClientConfig
+    models_path: str
 
 
 default_service_config = ServiceConfig(
@@ -21,6 +22,7 @@ default_service_config = ServiceConfig(
     s3_client_config=S3ClientConfig(
                     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
                     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
-                )
+                ),
+    models_path=os.environ.get('MODEL_PATH')
 )
 
