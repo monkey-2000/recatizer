@@ -39,7 +39,7 @@ def get_constant_node(model, node_id):
             return op_idx, op
 
 
-def polish_model(model, optimize=True):
+def polish_model(model, optimize=False):
     """
     This function combines several useful utility functions together.
     """
@@ -47,6 +47,6 @@ def polish_model(model, optimize=True):
     onnx.helper.strip_doc_string(model)
     model = onnx.shape_inference.infer_shapes(model)
     if optimize:
-        model = onnx.onnxoptimizer.optimize(model, BASIC_FUSE_OPTIMIZATIONS)
+        model = onnx.optimizer.optimize(model, BASIC_FUSE_OPTIMIZATIONS)
     onnx.checker.check_model(model)
     return model

@@ -31,17 +31,17 @@ class ModelExporter:
         import torch
         cpu_device = torch.device("cpu")
 
-        try:
-            if model is None:
-                model = torch.load(weights_path, map_location=str(cpu_device))
-            else:
-                model_weights = torch.load(weights_path, map_location=str(cpu_device))["state_dict"]
-                model_weights = {k: v for k, v in model_weights.items() if k in model.state_dict()}
-                print("loaded weights: ", weights_path)
-                model.load_state_dict(model_weights, strict=True)
-        except (FileNotFoundError, AttributeError) as e:
-            if not allow_random_weights:
-                raise FileNotFoundError("Weights not found: " + str(e))
+        # try:
+        #     if model is None:
+        #         model = torch.load(weights_path, map_location=str(cpu_device))
+        #     else:
+        #         model_weights = torch.load(weights_path, map_location=str(cpu_device))["state_dict"]
+        #         model_weights = {k: v for k, v in model_weights.items() if k in model.state_dict()}
+        #         print("loaded weights: ", weights_path)
+        #         model.load_state_dict(model_weights, strict=True)
+        # except (FileNotFoundError, AttributeError) as e:
+        #     if not allow_random_weights:
+        #         raise FileNotFoundError("Weights not found: " + str(e))
 
         # To be sure that model and weights on CPU
         model = model.to(cpu_device)
@@ -72,8 +72,8 @@ class ModelExporter:
 
 
     def export_dldt(self, onnx_model_path: str):
-        input_shape = [1, self.channels, self.rows, self.cols]
-        export_dldt(self.model_name, onnx_model_path, self.save_path, input_shape=input_shape)
+        input_shape = [1, 1, self.channels, self.rows, self.cols]
+        export_dldt(onnx_model_path, self.save_path, input_shape=input_shape)
 
 
 if __name__ == "__main__":
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     argparser.add_argument("--model_weights", type=str, help="model weights path", default="/Users/alinatamkevich/dev/models/tf_efficientnet_b0_last")
     argparser.add_argument("--model_name", help="model name", default="classificator")
 
-    argparser.add_argument("--rows_cols", type=str, default="[120, 120]")
+    argparser.add_argument("--rows_cols", type=str, default="[128, 128]")
     argparser.add_argument("--channels", type=str, default=3)
     args = argparser.parse_args()
 
@@ -97,4 +97,4 @@ if __name__ == "__main__":
     model_with_shape, onnx_output_path = exporter.save_onnx()
 
     #openvino
-    exporter.export_dldt()
+    exporter.export_dldt(onnx_output_path)

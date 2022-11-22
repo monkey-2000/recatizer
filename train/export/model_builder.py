@@ -2,8 +2,8 @@ import torch
 
 from train.configs.utils import load
 from train.model.cats_model import HappyWhaleModel
-
-
+from fastseg import MobileV3Large
+from train.model import backbone
 class ModelBuilder:
     def __init__(self, config_name: str, model_name: str=""):
         self.model_name = model_name
@@ -15,3 +15,4 @@ class ModelBuilder:
         self.model = self.model_mapping[self.model_name](self.config, torch.device('cpu'), is_train_stage=False)
         self.model.eval()
         return self.model
+        # return  backbone.load_backbone("tf_efficientnet_b0", pretrained=True).cpu().eval()

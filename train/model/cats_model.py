@@ -69,7 +69,9 @@ class HappyWhaleModel(nn.Module):
     def forward(self, input):
         images = input[0]
         features = self.backbone(images)
+
         embedding = self.forward_features(features)
+
         if self.is_train_stage:
             labels = input[1]
             logits_margin, logits = self.arcface(embedding, labels)
