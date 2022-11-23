@@ -5,11 +5,11 @@ from sklearn.preprocessing import normalize
 import numpy as np
 from tqdm import tqdm
 
-from inference.entities.base import Entity
-from inference.entities.cat import Cat, ClosestCats
-from inference.ir_models.ir_cats_cls import CatIrClassificator
-from telegram_bot.configs.bot_base_configs import S3ClientConfig
-from telegram_bot.s3_client import YandexS3Client
+from src.entities.base import Entity
+from src.entities.cat import Cat, ClosestCats
+from src.ir_models.ir_cats_cls import CatIrClassificator
+from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
+from src.telegram_bot import YandexS3Client
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
 from train.utils.image_utils import  resize_image_if_needed
 

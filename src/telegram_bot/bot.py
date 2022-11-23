@@ -7,9 +7,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-from telegram_bot.configs.bot_cfgs import bot_config
-from telegram_bot.cats_queue.producer import Producer
-from telegram_bot.s3_client import YandexS3Client
+from src.telegram_bot.configs.bot_cfgs import bot_config
+from src.cats_queue.producer import Producer
+from src.utils.s3_client import YandexS3Client
 
 
 bot = Bot(token=bot_config.token)

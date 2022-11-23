@@ -1,7 +1,7 @@
 import argparse
 import warnings
 from configs.utils import load
-
+import wandb
 from train.task.cats_task import CatsTask
 
 
@@ -19,6 +19,12 @@ def main():
     args = parse()
     warnings.filterwarnings("ignore", ".*does not have many workers.*")
     cfg = load(args.config_name)
+    wandb.init(project='recatizer_proj', entity='recatizer')
+    wandb.config = {
+        "learning_rate": 0.001,
+        "epochs": 100,
+        "batch_size": 128
+    }
     if not cfg:
         raise RuntimeError(f"not found config_name: {args.config_name}")
     CatsTask(cfg).fit()

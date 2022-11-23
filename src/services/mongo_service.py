@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Optional
 
-from inference.entities.base import Entity
-from inference.entities.cat import Cat
-from inference.entities.person import Person
+from src.entities.base import Entity
+from src.entities.cat import Cat
+from src.entities.person import Person
 
 
 class MongoClientBase(ABC):

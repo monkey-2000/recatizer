@@ -1,6 +1,6 @@
 from telegram import Bot, InputMediaPhoto
 from json import dumps
-from inference.entities.cat import ClosestCats
+from src.entities.cat import ClosestCats
 
 
 class DataUploader:
