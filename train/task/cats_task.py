@@ -11,8 +11,8 @@ from train.dataset.transforms import get_transforms_train
 
 
 class CatsTask(BaseTask):
-    def __init__(self, config: Config):
-        super().__init__("classificator", config)
+    def __init__(self, wandb_run, config: Config):
+        super().__init__(wandb_run, "classificator", config)
         self.task_config = self.config.task_config
         self.dataset_config = self.config.dataset_config
         self.model_config = self.config.model_config

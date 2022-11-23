@@ -2,8 +2,12 @@ import os
 from typing import Optional
 import time
 import numpy as np
+import torch
+import wandb
 from tensorboardX import SummaryWriter
 import json
+
+from torch import nn
 
 from train.task.callbacks.base import Callback
 
@@ -75,3 +79,38 @@ class JsonMetricSaver(Callback):
         fp.seek(0)
         fp.write(json.dumps(old_data, indent=4))
         fp.truncate()
+
+
+class WanDBMetricSaver(Callback):
+    def __init__(self,optimizer, metrics_collection):
+        Callback.__init__(self)
+        self.optimizer = optimizer
+        self.metrics_collection = metrics_collection
+
+    def on_epoch_end(self, epoch):
+        for idx, param_group in enumerate(self.optimizer.param_groups):
+            lr = param_group['lr']
+            wandb.log({"lr": lr}, commit=False)
+
+
+
+
+class WanDBModelSaver(Callback):
+    def __init__(self, wb_run, model: nn.Module, model_name: str="recatizer"):
+        Callback.__init__(self)
+        self.model = model.eval()
+        self.model_name = model_name+ "_last"
+        self.path = os.path.join(os.path.curdir, self.model_name)
+        self.wb_run = wb_run
+
+    def on_epoch_end(self, epoch):
+        torch.save({
+            'epoch': epoch,
+            'state_dict': self.model.state_dict()
+
+        }, self.path)
+
+    def on_train_end(self):
+        artifact = wandb.Artifact(self.model_name, type="model")
+        artifact.add_file(self.path)
+        self.wb_run.log_artifact(artifact)

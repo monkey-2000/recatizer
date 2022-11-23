@@ -16,7 +16,7 @@ class BaseTask(ABC):
     all the things needed to run training or services. Also it's responsible on saving results to s3.
     """
 
-    def __init__(self, task_name: str, config: Config):
+    def __init__(self, wandb_run, task_name: str, config: Config):
         self.task_name = task_name
         self.starttime = time.time()
         self.startdate = datetime.now().strftime("%Y-%m-%d")
@@ -25,7 +25,7 @@ class BaseTask(ABC):
         self._lh = None
         self.task_config: TaskConfig = None
         self.dataset_config: DatasetConfig = None
-
+        self.wandb_run = wandb_run
         self.save_folder = self.config.save_folder
 
     @abstractmethod
@@ -54,9 +54,10 @@ class BaseTask(ABC):
         """This method should build calculator for all tasks."""
         raise NotImplementedError
 
-    def get_runner(self, model: nn.Module) -> TaskRunner:
+    def get_runner(self, wandb_run, model: nn.Module) -> TaskRunner:
         criterion = self.build_criterion()
         return TaskRunner(
+            wandb_run,
             model,
             criterion,
             self.config.optimizer,
@@ -73,6 +74,6 @@ class BaseTask(ABC):
         val_loaders = self.get_val_loaders()
 
         loaders = {"train": train_loaders, "val": val_loaders}
-        self.get_runner(model).fit(loaders)
+        self.get_runner(self.wandb_run, model).fit(loaders)
 
 

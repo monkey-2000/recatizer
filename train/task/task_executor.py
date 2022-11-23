@@ -5,7 +5,7 @@ import wandb
 from tqdm import tqdm
 from typing import Dict, Union, List
 from torch.utils.data.dataloader import DataLoader
-import warnings
+import torchmetrics
 import torch.nn as nn
 from train.configs.base_config import OptimizerParams, ModelConfig
 from train.optimizers.base_criterion import BaseLossAndMetricCriterion
@@ -13,7 +13,7 @@ from timm.utils import AverageMeter
 
 from train.optimizers.optimizer_builder import OptimizerBuilder
 from train.task.callbacks.base import CallbacksCollection, Callback
-from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver
+from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver, WanDBMetricSaver, WanDBModelSaver
 from train.utils.checkpoint_utils import CheckpointHandler
 
 
@@ -32,7 +32,7 @@ class MetricsCollection:
 
 class TaskRunner:
 
-    def __init__(self, model: nn.Module,
+    def __init__(self, wandb_run, model: nn.Module,
                  criterion: BaseLossAndMetricCriterion,
                  optimizer_config: OptimizerParams,
                  model_config: ModelConfig,
@@ -40,6 +40,7 @@ class TaskRunner:
                  test_every: int = 5,
                  device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
 
+        self.wandb_run = wandb_run
         self.device = device
         self.test_every = test_every
         self.checkpoint_handler = CheckpointHandler(model_config)
@@ -57,7 +58,7 @@ class TaskRunner:
         self.callbacks = CallbacksCollection(self._create_basic_callbacks())
         self.lr = optimizer_config.lr
         self.separate_step = True
-
+        self.metric = torchmetrics.Accuracy()
         self.nb_epoch = optimizer_config.epochs
         self.warmup_epoch = 0
         self.start_epoch = 0
@@ -80,6 +81,9 @@ class TaskRunner:
             JsonMetricSaver(self.logs_save_path,
                             self.optimizer,
                             self.metrics_collection),
+            WanDBMetricSaver(self.optimizer,
+                            self.metrics_collection),
+            WanDBModelSaver(self.wandb_run, self.model)
         ]
         return callbacks
 
@@ -107,7 +111,8 @@ class TaskRunner:
             if training:
                 self.lr_scheduler.step()
             self.callbacks.on_batch_end(batch_number)
-        wandb.log({'epoch': epoch + 1, 'loss': self.avg_meters['loss']})
+
+        wandb.log({'epoch': epoch + 1, 'loss': self.avg_meters['loss'].avg})
         return {k: v for k, v in self.avg_meters.items()}
 
 
@@ -127,6 +132,8 @@ class TaskRunner:
 
         model_output = self.model(input)
         assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
+        acc = self.metric(model_output["logits_margin"], data["label"])
+        print(f"Accuracy on epoch {epoch} on batch {batch_number}: {acc}")
 
         loss = self.criterion.calculate(model_output, data, training)
         self.avg_meters['loss'].update(loss.item(), input[0].size(0))
