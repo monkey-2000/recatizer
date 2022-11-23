@@ -48,10 +48,10 @@ class MsgConsumer:
         topic = msg.topic
         message = msg.value
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                   embeddings=None, chat_id=message["user_id"]))
+            self.inference.add_user(Person(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
+                   embeddings=None, chat_id=message["user_id"])) # ADD additional_info=message["additional_info"]
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, path=message['image_path'], quadkey=message["quadkey"],
+            self.inference.save_new_cat(Cat(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
                                            embeddings=None, additional_info=message["additional_info"]))
 
     def main_loop(self):
