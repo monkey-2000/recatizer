@@ -1,9 +1,9 @@
 import dataclasses
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
-from inference.entities.base import Entity
-from inference.entities.person import Person
+from src.entities.base import Entity
+from src.entities.person import Person
 
 
 @dataclass

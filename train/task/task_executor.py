@@ -1,6 +1,7 @@
 import math
 import os
 import torch
+import wandb
 from tqdm import tqdm
 from typing import Dict, Union, List
 from torch.utils.data.dataloader import DataLoader
@@ -43,6 +44,7 @@ class TaskRunner:
         self.test_every = test_every
         self.checkpoint_handler = CheckpointHandler(model_config)
         self.model = self._init_model(model)
+        wandb.watch(self.model, criterion, log="all")
         self.model_config = model_config
         self.model.to(self.device)
         self.criterion = criterion
@@ -105,6 +107,7 @@ class TaskRunner:
             if training:
                 self.lr_scheduler.step()
             self.callbacks.on_batch_end(batch_number)
+        wandb.log({'epoch': epoch + 1, 'loss': self.avg_meters['loss']})
         return {k: v for k, v in self.avg_meters.items()}
 
 
@@ -122,9 +125,6 @@ class TaskRunner:
         input = [data[key] for key in model_input_fields]
         input = [i.to(self.device) for i in input]
 
-
-        if len(input) != 1:
-            warnings.warn("make sure your model has list of inputs")
         model_output = self.model(input)
         assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
 

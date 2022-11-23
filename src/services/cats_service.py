@@ -3,13 +3,13 @@ from typing import List
 
 from pymongo import MongoClient
 
-from inference.bot_loader import DataUploader
-from inference.cats_service_base import CatsServiceBase
-from inference.configs.service_config import ServiceConfig, default_service_config
-from inference.entities.cat import Cat
-from inference.entities.person import Person
-from inference.matcher import CatsMatcher, Predictor
-from inference.mongo_service import CatsMongoClient, PeopleMongoClient
+from src.telegram_bot.bot_loader import DataUploader
+from src.services.cats_service_base import CatsServiceBase
+from src.configs.service_config import ServiceConfig, default_service_config
+from src.entities.cat import Cat
+from src.entities.person import Person
+from src.services.matcher import CatsMatcher, Predictor
+from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
 
 
 class CatsService(CatsServiceBase):

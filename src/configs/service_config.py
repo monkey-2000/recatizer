@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from dataclasses import dataclass
-from telegram_bot.configs.bot_base_configs import S3ClientConfig
+from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
 
 
 load_dotenv()

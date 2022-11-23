@@ -1,6 +1,6 @@
 import dataclasses
 from dataclasses import dataclass
-from inference.entities.base import Entity
+from src.entities.base import Entity
 
 
 @dataclass
