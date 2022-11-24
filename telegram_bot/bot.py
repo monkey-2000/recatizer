@@ -14,7 +14,7 @@ from telegram_bot.s3_client import YandexS3Client
 
 bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
-#kafka_producer = Producer()
+kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
 s3_client = YandexS3Client(bot_config.s3_client_config.aws_access_key_id, bot_config.s3_client_config.aws_secret_access_key)
 class QStates(StatesGroup):
@@ -106,6 +106,7 @@ async def handle_location(message: types.Message, state: FSMContext):
     quadkey = point_to_quadkey(lon, lat)
     user_data = await state.get_data()
     kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
+    kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
     #reply = "Thank you !!!"
     reply = "Thanks! We notify you when we'll get any news"
     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
@@ -121,6 +122,7 @@ async def handle_location(message: types.Message, state: FSMContext):
     quadkey = point_to_quadkey(lon, lat)
     user_data = await state.get_data()
     kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
+    kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
     #reply = "Thank you !!!"
     reply = "Thank you!"
     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
