@@ -46,4 +46,4 @@ class CatsDataset(Dataset):
         return data
 
     def __len__(self) -> int:
-        return 20#self.df.shape[0]
+        return self.df.shape[0]
