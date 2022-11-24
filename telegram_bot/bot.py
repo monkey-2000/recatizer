@@ -12,7 +12,7 @@ from telegram_bot.configs.bot_cfgs import bot_config
 from telegram_bot.cats_queue.producer import Producer
 from telegram_bot.s3_client import YandexS3Client
 
-bot = Bot(token=bot_config.token)#bot_config.token)
+bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
 #kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
@@ -21,77 +21,30 @@ class QStates(StatesGroup):
     saw = State()
     find = State()
     geo = State()
-@dp.message_handler(commands= ['locate_me'])
-async def cmd_locate_me(message: types.Message):
+    greetings = State()
+@dp.message_handler(commands= ['start'])
+async def cmd_locate_me(message: types.Message, state: FSMContext):
     reply = "Click on the the button below to share your location"
     button = types.KeyboardButton('🕹 Share position', request_location=True)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(button)
     await message.answer(reply, reply_markup=keyboard)
+    await state.set_state(QStates.geo)
 
-# @dp.message_handler(content_types=['location'])
-# async def handle_location(message: types.Message):
-#     lat = message.location.latitude
-#     lon = message.location.longitude
-#     reply = "latitude:  {}\nlongitude: {}".format(lat, lon)
-#     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
-
-def point_to_quadkey(lon: float, lat: float) -> str:
+@dp.message_handler(state=QStates.geo, content_types=['location'])
+async def handle_location(message: types.Message, state: FSMContext):
     lat = message.location.latitude
     lon = message.location.longitude
-    tile = mercantile.tile(lon, lat)
+    reply = "ok"
+    await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
+    await state.set_state(QStates.greetings)
+
+def point_to_quadkey(lon: float, lat: float, zoom: int=16) -> str:
+    lat = message.location.latitude
+    lon = message.location.longitude
+    tile = mercantile.tile(lon, lat, zoom)
     return mercantile.quadkey(tile)
 
-# @dp.message_handler(commands=['start'], state="*")
-# async def start(message: types.Message, state: FSMContext):
-#     await state.reset_state(with_data=False)
-#     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-#     buttons = []
-#     #user_data = await state.get_data()
-#     #print(user_data)
-#     buttons.append(types.KeyboardButton(text="I saw a cat"))
-#     buttons.append(types.KeyboardButton(text="I lost my cat"))
-#     keyboard.add(*buttons)
-#     await message.answer("Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat", reply_markup=keyboard)
-#
-#
-# @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
-# async def lost_cat(message: types.Message, state: FSMContext):
-#     await message.answer("Please upload photo of your cat",
-#                          reply_markup=types.ReplyKeyboardRemove())
-#     await state.set_state(QStates.find)
-#
-#
-# @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
-# async def saw_cat(message: types.Message, state: FSMContext):
-#     await message.answer("Please upload photo of cat",
-#                          reply_markup=types.ReplyKeyboardRemove())
-#     await state.set_state(QStates.saw)
-#
-#
-# def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
-#     return {'user_id': user_id,
-#                  'image_path': image_path,
-#                  'additional_info': additional_info,
-#                  'quadkey': quadkey}
-#
-# async def save_to_s3(message):
-#     image_name = "{0}.jpg".format(str(uuid.uuid4()))
-#     os.makedirs(bot_config.image_dir, exist_ok=True)
-#     image_path = os.path.join(bot_config.image_dir, image_name)
-#     await message.photo[-1].download(image_path)
-#     s3_path = s3_client.save_image(image_path)
-#     os.remove(image_path)
-#     return s3_path
-#
-# @dp.message_handler(state=QStates.find, content_types=['photo'])
-# async def process_find(message: types.Message, state: FSMContext):
-#     additional_info = message.to_python().get("caption", "")
-#     s3_path = await save_to_s3(message)
-#     kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-#     #kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
-#     await message.answer("Thanks! We notify you when we'll get any news")
-#
 # @dp.message_handler(state=QStates.saw, content_types=['photo'])
 # async def process_saw(message: types.Message, state: FSMContext):
 #     additional_info = message.to_python().get("caption", "")
@@ -99,6 +52,65 @@ def point_to_quadkey(lon: float, lat: float) -> str:
 #     kafka_message = to_message(message.from_user.id, s3_path, additional_info)
 #     #kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
 #     await message.answer("Thank you !!!")
+
+
+@dp.message_handler(state=QStates.greetings) #(commands=['start'], state="*")
+async def start(message: types.Message, state: FSMContext):
+    await state.reset_state(with_data=False)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = []
+    #user_data = await state.get_data()
+    #print(user_data)
+    buttons.append(types.KeyboardButton(text="I saw a cat"))
+    buttons.append(types.KeyboardButton(text="I lost my cat"))
+    keyboard.add(*buttons)
+    await message.answer("Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat", reply_markup=keyboard)
+
+
+@dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
+async def lost_cat(message: types.Message, state: FSMContext):
+    await message.answer("Please upload photo of your cat",
+                         reply_markup=types.ReplyKeyboardRemove())
+    await state.set_state(QStates.find)
+
+
+@dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
+async def saw_cat(message: types.Message, state: FSMContext):
+    await message.answer("Please upload photo of cat",
+                         reply_markup=types.ReplyKeyboardRemove())
+    await state.set_state(QStates.saw)
+
+
+def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
+    return {'user_id': user_id,
+                 'image_path': image_path,
+                 'additional_info': additional_info,
+                 'quadkey': quadkey}
+
+async def save_to_s3(message):
+    image_name = "{0}.jpg".format(str(uuid.uuid4()))
+    os.makedirs(bot_config.image_dir, exist_ok=True)
+    image_path = os.path.join(bot_config.image_dir, image_name)
+    await message.photo[-1].download(image_path)
+    s3_path = s3_client.save_image(image_path)
+    os.remove(image_path)
+    return s3_path
+
+@dp.message_handler(state=QStates.find, content_types=['photo'])
+async def process_find(message: types.Message, state: FSMContext):
+    additional_info = message.to_python().get("caption", "")
+    s3_path = await save_to_s3(message)
+    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
+    #kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
+    await message.answer("Thanks! We notify you when we'll get any news")
+
+@dp.message_handler(state=QStates.saw, content_types=['photo'])
+async def process_saw(message: types.Message, state: FSMContext):
+    additional_info = message.to_python().get("caption", "")
+    s3_path = await save_to_s3(message)
+    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
+    #kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
+    await message.answer("Thank you !!!")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True, timeout=10*60)
