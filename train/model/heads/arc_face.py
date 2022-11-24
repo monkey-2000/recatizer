@@ -102,16 +102,17 @@ class ArcAdaptiveMarginProduct(nn.Module):
         cosine_all = F.linear(F.normalize(input), F.normalize(self.weight))
         cosine_all = cosine_all.view(-1, self.out_features, self.k)
         cosine, _ = torch.max(cosine_all, dim=2)
+        sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
 
-        ms = []
+
         ms = self.margins[labels.clone().cpu().numpy()]
         cos_m = torch.from_numpy(np.cos(ms)).float().to(self.device)
         sin_m = torch.from_numpy(np.sin(ms)).float().to(self.device)
         th = torch.from_numpy(np.cos(math.pi - ms)).float().to(self.device)
         mm = torch.from_numpy(np.sin(math.pi - ms) * ms).float().to(self.device)
-      #  labels=torch.squeeze(labels, axis=1)
+
         labels = F.one_hot(labels, self.out_features).float()
-        sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
+
         phi = cosine * cos_m.view(-1, 1) - sine * sin_m.view(-1, 1)
         phi = torch.where(cosine > th.view(-1, 1), phi, cosine - mm.view(-1, 1))
         output = (labels * phi) + ((1.0 - labels) * cosine)

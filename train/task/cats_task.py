@@ -4,6 +4,7 @@ import pandas as pd
 from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from train.optimizers.cross_entropy import ClsLossAndMetricCriterion
 from train.model.cats_model import HappyWhaleModel
+from train.optimizers.metrics import PRMetric, AccuracyMetric
 from train.task.base_task import BaseTask
 from train.configs.base_config import Config
 from train.dataset.cat_dataset import CatsDataset
@@ -25,7 +26,8 @@ class CatsTask(BaseTask):
         return CatsDataset(self.dataset_config.base_path, self.dataset_config.train_path, get_transforms_train(self.image_size))
 
     def build_criterion(self) -> BaseLossAndMetricCriterion:
-        return ClsLossAndMetricCriterion(self.device)
+        metrics = [PRMetric(self.model_config.num_classes), AccuracyMetric()]
+        return ClsLossAndMetricCriterion(device=self.device, metrics=metrics)
 
     def get_model(self):
         df = pd.read_csv(self.dataset_config.train_path)

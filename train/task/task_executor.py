@@ -23,7 +23,6 @@ class MetricsCollection:
     """
 
     def __init__(self):
-        self.stop_training = False
         self.best_loss = float('inf')
         self.best_epoch = 0
         self.train_metrics = {}
@@ -94,14 +93,13 @@ class TaskRunner:
 
         mode_loader = loaders[mode]
         steps_per_epoch = len(mode_loader)
-        loss_meter = AverageMeter()
-        self.avg_meters = {"loss": loss_meter}
+        self.avg_meters["loss"] = AverageMeter()
 
         iterator = tqdm(mode_loader)
         for batch_number, tasks_data  in enumerate(iterator):
             self.callbacks.on_batch_begin(batch_number)
-            self._make_step(tasks_data, epoch, batch_number, steps_per_epoch, training)
 
+            self._make_step(tasks_data, epoch, batch_number, steps_per_epoch, training)
             avg_metrics = {k: f"{v.avg:.4f}" for k, v in self.avg_meters.items()}
             iterator.set_postfix({"lr": float(self.lr_scheduler.get_last_lr()[-1]),
                                   "epoch": epoch,
@@ -110,19 +108,16 @@ class TaskRunner:
                                   })
             if training:
                 self.lr_scheduler.step()
-            self.callbacks.on_batch_end(batch_number)
 
-        wandb.log({'epoch': epoch + 1, 'loss': self.avg_meters['loss'].avg})
+
+            self.callbacks.on_batch_end(batch_number)
         return {k: v for k, v in self.avg_meters.items()}
 
 
 
     def _make_step(self, data: Dict[str, torch.Tensor], epoch, batch_number,
                    steps_per_epoch, training: bool):
-        """
-        Make step on single batch inside of this method. In case of multitasking - just batch after batch.
-        :param tasks_data: name of task and dict with batch
-        """
+
         if training:
             self.optimizer.zero_grad()
 
@@ -131,12 +126,8 @@ class TaskRunner:
         input = [i.to(self.device) for i in input]
 
         model_output = self.model(input)
-        assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
-        acc = self.metric(model_output["logits_margin"], data["label"])
-        print(f"Accuracy on epoch {epoch} on batch {batch_number}: {acc}")
 
-        loss = self.criterion.calculate(model_output, data, training)
-        self.avg_meters['loss'].update(loss.item(), input[0].size(0))
+        loss = self.criterion.calculate(model_output, data, self.avg_meters, training)
 
         if math.isnan(loss.item()) or math.isinf(loss.item()):
             raise ValueError("NaN loss !!")
@@ -152,21 +143,18 @@ class TaskRunner:
         self.callbacks.on_train_begin()
         for epoch in range(self.start_epoch, self.nb_epoch):
             self.callbacks.on_epoch_begin(epoch)
+
+
             self.model.train()
             self.metrics_collection.train_metrics = self._run_one_epoch(epoch, loaders, training=True)
             self.checkpoint_handler.save_last(model=self.model, current_epoch=epoch,
                                               current_metrics=self.metrics_collection.train_metrics)
-            if epoch >= self.warmup_epoch and not self.step_mode_schedule:
-                self.lr_scheduler.step(epoch)
+            self.lr_scheduler.step(epoch)
 
             if (epoch + 1) % self.test_every == 0:
                 self.model.eval()
                 with torch.no_grad():
                     self.metrics_collection.val_metrics = self._run_one_epoch(epoch, loaders, training=False)
-
-
-            if self.metrics_collection.stop_training:
-                break
 
             self.callbacks.on_epoch_end(epoch)
         self.callbacks.on_train_end()
