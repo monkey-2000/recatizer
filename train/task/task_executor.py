@@ -10,7 +10,7 @@ import torch.nn as nn
 from train.configs.base_config import OptimizerParams, ModelConfig
 from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from timm.utils import AverageMeter
-
+from collections import defaultdict
 from train.optimizers.optimizer_builder import OptimizerBuilder
 from train.task.callbacks.base import CallbacksCollection, Callback
 from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver, WanDBMetricSaver, WanDBModelSaver
@@ -48,7 +48,7 @@ class TaskRunner:
         self.model_config = model_config
         self.model.to(self.device)
         self.criterion = criterion
-        self.avg_meters = {}
+        self.avg_meters = defaultdict(AverageMeter)
         self.optimizer, self.lr_scheduler = OptimizerBuilder(optimizer_config).build(model)
         self.save_folder = save_folder
         self.weights_save_path = os.path.join('results', 'weights', self.save_folder)
@@ -93,7 +93,6 @@ class TaskRunner:
 
         mode_loader = loaders[mode]
         steps_per_epoch = len(mode_loader)
-        self.avg_meters["loss"] = AverageMeter()
 
         iterator = tqdm(mode_loader)
         for batch_number, tasks_data  in enumerate(iterator):

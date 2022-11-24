@@ -92,6 +92,12 @@ class WanDBMetricSaver(Callback):
             lr = param_group['lr']
             wandb.log({"lr": lr}, commit=False)
 
+        for k, v in self.metrics_collection.train_metrics.items():
+            wandb.log({f"train_{k}": v.avg}, commit=False)
+
+        for k, v in self.metrics_collection.val_metrics.items():
+            wandb.log({f"val_{k}": v.avg}, commit=False)
+
 
 
 

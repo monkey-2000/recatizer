@@ -27,14 +27,14 @@ class ClsLossAndMetricCriterion(BaseLossAndMetricCriterion):
         return loss
 
     def __calc_metrics(self, output: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor], avg_meter: Dict[str, AverageMeter]):
-        labels = target['label']
+        labels = target['label'].data.cpu().numpy().tolist()
         pred_logits = output["logits_margin"].data.cpu().numpy()
-        pred_labels = np.argmax(output, axis=1)
+        pred_labels = np.argmax(pred_logits, axis=1).tolist()
         for idx, meter in enumerate(self.metrics):
             meter.update(labels, pred_labels)
             metric = meter.compute()
             for metric_name, value in metric.items():
-                avg_meter["avg_" + metric_name].update(value)
+                avg_meter[metric_name].update(value)
     def on_epoch_start(self):
         for meter in self.metrics:
             meter.reset()

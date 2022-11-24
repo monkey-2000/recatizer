@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, OrderedDict
-
+from typing import Iterable
+from collections import defaultdict
 import numpy as np
 
 class BaseMetric(ABC):
@@ -22,9 +22,9 @@ class PRMetric(BaseMetric):
         self.reset()
 
     def reset(self):
-        self.fn_classes = dict()
-        self.fp_classes = dict()
-        self.tp_classes = dict()
+        self.fn_classes = defaultdict(int)
+        self.fp_classes = defaultdict(int)
+        self.tp_classes = defaultdict(int)
 
     def update(self, target: Iterable[int], predicted: Iterable[int]):
         for target_class, predicted_class in zip(target, predicted):
@@ -68,5 +68,5 @@ class AccuracyMetric(BaseMetric):
         self.total += len(target)
 
     def compute(self):
-        return float(self.correct) / self.total
+        return {self._name: float(self.correct) / self.total}
 
