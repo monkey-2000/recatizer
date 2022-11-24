@@ -70,8 +70,6 @@ async def saw_cat(message: types.Message, state: FSMContext):
 async def process_find(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    #kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    #kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
     reply = "Would you like to share your location?"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
@@ -88,7 +86,6 @@ async def process_find(message: types.Message, state: FSMContext):
 async def process_saw(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    #kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
     reply = "Would you like to share your location?"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
@@ -101,7 +98,18 @@ async def process_saw(message: types.Message, state: FSMContext):
                             additional_info=additional_info,
                             kafka_topic='saw_cat')
 
-#kafka_message = to_message(message.from_user.id, s3_path, additional_info)
+@dp.message_handler(state=QStates.geo, content_types=['location'])
+async def handle_location(message: types.Message, state: FSMContext):
+    lat = message.location.latitude
+    lon = message.location.longitude
+    quadkey = point_to_quadkey(lon, lat)
+    user_data = await state.get_data()
+    kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
+    kafka_producer.send(value=kafka_message, key=id, topic=user_data['kafka_topic'])
+    reply = "Thanks!"
+    await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
+    #await state.update_data(quadkey=quadkey)
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True, timeout=10*60)
