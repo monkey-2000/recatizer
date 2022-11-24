@@ -40,12 +40,8 @@ def main():
     args = parse()
     warnings.filterwarnings("ignore", ".*does not have many workers.*")
     cfg: Config = load(args.config_name)
-    run = wandb.init(project='recatizer_proj', entity='recatizer')
-    wandb.config = {
-        "learning_rate": 0.001,
-        "epochs": 100,
-        "batch_size": 128
-    }
+    run = wandb.init(project='recatizer_proj2', entity='recatizer')
+
     if not cfg:
         raise RuntimeError(f"not found config_name: {args.config_name}")
     process(run, args.action, cfg)

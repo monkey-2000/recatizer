@@ -82,21 +82,22 @@ class JsonMetricSaver(Callback):
 
 
 class WanDBMetricSaver(Callback):
-    def __init__(self,optimizer, metrics_collection):
+    def __init__(self, wandb_run, optimizer, metrics_collection):
         Callback.__init__(self)
         self.optimizer = optimizer
         self.metrics_collection = metrics_collection
+        self.wandb_run = wandb_run
 
     def on_epoch_end(self, epoch):
         for idx, param_group in enumerate(self.optimizer.param_groups):
             lr = param_group['lr']
-            wandb.log({"lr": lr}, commit=False)
+            self.wandb_run.log({"lr": lr})
 
         for k, v in self.metrics_collection.train_metrics.items():
-            wandb.log({f"train_{k}": v.avg}, commit=False)
+            self.wandb_run.log({f"train_{k}": v.avg})
 
         for k, v in self.metrics_collection.val_metrics.items():
-            wandb.log({f"val_{k}": v.avg}, commit=False)
+            self.wandb_run.log({f"val_{k}": v.avg})
 
 
 

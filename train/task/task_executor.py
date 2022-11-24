@@ -80,7 +80,7 @@ class TaskRunner:
             JsonMetricSaver(self.logs_save_path,
                             self.optimizer,
                             self.metrics_collection),
-            WanDBMetricSaver(self.optimizer,
+            WanDBMetricSaver(self.wandb_run, self.optimizer,
                             self.metrics_collection),
             WanDBModelSaver(self.wandb_run, self.model)
         ]
