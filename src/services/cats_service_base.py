@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List
 
-from inference.entities.cat import Cat
-from inference.entities.person import Person
+from src.entities.cat import Cat
+from src.entities.person import Person
 
 
 class CatsServiceBase(ABC):

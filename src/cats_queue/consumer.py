@@ -6,10 +6,10 @@ import multiprocessing.pool as mp_pool
 import json
 from kafka.consumer.fetcher import ConsumerRecord
 
-from inference.cats_service import CatsService
-from inference.configs.service_config import default_service_config
-from inference.entities.cat import Cat
-from inference.entities.person import Person
+from src.services.cats_service import CatsService
+from src.configs.service_config import default_service_config
+from src.entities.cat import Cat
+from src.entities import Person
 
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
@@ -29,7 +29,7 @@ class MsgConsumer:
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="earliest",
-            bootstrap_servers=['51.250.29.33:9092'],
+            bootstrap_servers=['localhost:9092'],
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
             key_deserializer=lambda v: json.loads(v.decode('ascii')),

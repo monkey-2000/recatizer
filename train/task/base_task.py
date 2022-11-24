@@ -13,7 +13,7 @@ from train.task.task_executor import TaskRunner
 class BaseTask(ABC):
     """
     Task is an abstraction to create dataset, loader, estimator, calculators and so on -
-    all the things needed to run training or inference. Also it's responsible on saving results to s3.
+    all the things needed to run training or services. Also it's responsible on saving results to s3.
     """
 
     def __init__(self, task_name: str, config: Config):

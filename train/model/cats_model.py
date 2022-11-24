@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch.nn as nn
 import torch
 
@@ -9,7 +11,7 @@ from train.model.heads.arc_face import ArcAdaptiveMarginProduct
 import numpy as np
 
 class HappyWhaleModel(nn.Module):
-    def __init__(self, config: ModelConfig, device: torch.device, id_class_nums: np.ndarray):
+    def __init__(self, config: ModelConfig, device: torch.device, is_train_stage: bool = True, id_class_nums: Optional[np.ndarray] = None):
 
         super(HappyWhaleModel, self).__init__()
         # Retrieve pretrained weights
@@ -17,7 +19,9 @@ class HappyWhaleModel(nn.Module):
         self.device = device
         self.backbone = backbone.load_backbone(config.model_name, pretrained=True)
         self.forward_features, embedding_size = self.build_forward_features(config)
-        self.arcface = self.build_head(config, embedding_size)
+        self.is_train_stage = is_train_stage
+        if self.is_train_stage:
+            self.arcface = self.build_head(config, embedding_size)
         # ArcMarginProduct(in_features=config.embedding_size,
         #                                 out_features=config.num_classes,
         #                                 s=30.0, m=0.50, easy_margin=False, ls_eps=0.0, device=device)
@@ -62,10 +66,14 @@ class HappyWhaleModel(nn.Module):
             device=self.device
         )
         return head
-    def forward(self, images, labels):
+    def forward(self, input):
+        images = input[0]
         features = self.backbone(images)
+
         embedding = self.forward_features(features)
-        if labels:
+
+        if self.is_train_stage:
+            labels = input[1]
             logits_margin, logits = self.arcface(embedding, labels)
             return {"logits_margin": logits_margin, "logits": logits, "embedding": embedding}
         else:

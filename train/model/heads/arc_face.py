@@ -109,6 +109,7 @@ class ArcAdaptiveMarginProduct(nn.Module):
         sin_m = torch.from_numpy(np.sin(ms)).float().to(self.device)
         th = torch.from_numpy(np.cos(math.pi - ms)).float().to(self.device)
         mm = torch.from_numpy(np.sin(math.pi - ms) * ms).float().to(self.device)
+      #  labels=torch.squeeze(labels, axis=1)
         labels = F.one_hot(labels, self.out_features).float()
         sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
         phi = cosine * cos_m.view(-1, 1) - sine * sin_m.view(-1, 1)

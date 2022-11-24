@@ -3,12 +3,11 @@ Simple echo Telegram Bot example on Aiogram framework using
 Yandex.Cloud functions.
 """
 
-import asyncio
 import json
 import logging
 import os
 from aiogram import Bot, Dispatcher, types
-from telegram_bot.bot import dp
+from src.telegram_bot.bot import dp
 
 # Logger initialization and logging level setting
 log = logging.getLogger(__name__)

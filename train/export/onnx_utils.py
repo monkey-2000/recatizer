@@ -39,7 +39,7 @@ def get_constant_node(model, node_id):
             return op_idx, op
 
 
-def polish_model(model, optimize=True):
+def polish_model(model, optimize=False):
     """
     This function combines several useful utility functions together.
     """

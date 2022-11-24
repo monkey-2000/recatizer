@@ -3,38 +3,42 @@ import cv2
 import faiss
 from sklearn.preprocessing import normalize
 import numpy as np
-import pandas as pd
-import torch
 from tqdm import tqdm
 
-from inference.entities.base import Entity
-from inference.entities.cat import Cat, ClosestCats
-from telegram_bot.configs.bot_base_configs import S3ClientConfig
-from telegram_bot.s3_client import YandexS3Client
-from train.model.cats_model import HappyWhaleModel
+from src.entities.base import Entity
+from src.entities.cat import Cat, ClosestCats
+from src.ir_models.ir_cats_cls import CatIrClassificator
+from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
+from src.telegram_bot import YandexS3Client
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
-from train.utils.image_utils import read_image, resize_image_if_needed
+from train.utils.image_utils import  resize_image_if_needed
 
 
 class Predictor:
-    def __init__(self, s3_config: S3ClientConfig):
-        config = tf_efficientnet_b0_config.model_config
-        df = pd.read_csv(tf_efficientnet_b0_config.dataset_config.train_path)
-        id_class_nums = df.cat_id.value_counts().sort_index().values
+    def __init__(self, s3_config: S3ClientConfig, models_path: str, local_model_path: str):
         self.image_size = tf_efficientnet_b0_config.image_size
-        self.model = HappyWhaleModel(config, torch.device('cpu'), id_class_nums=id_class_nums)
-        self.model.eval()
         self.s3_client = YandexS3Client(s3_config.aws_access_key_id, s3_config.aws_secret_access_key)
-    def _get_image(self, path: str):
-        image = self.s3_client.load_image(path)
-        image = resize_image_if_needed(image, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
+        self.s3_client.download_file(models_path, local_model_path)
+        self.model = CatIrClassificator(local_model_path)
+
+    def _images_to_tensor(self, img):
+        """ As input is image, img always comes in channels_last format """
+        shape = img.shape
+        assert len(shape) == 3 or len(shape) == 4, "Expecting tensor with dims 3 or 4"
+
+        # Update single image to batch of size 1
+        if len(shape) == 3:
+            img = np.expand_dims(img, axis=0)
+
+        image = resize_image_if_needed(img, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
         img = np.expand_dims(image, axis=0)
-        img = torch.Tensor(img).permute(0, 3, 1, 2)
         return img
+
     def predict(self, path: str):
-        data = self._get_image(path)
-        pred = self.model(data, None)
-        pred_np = pred['embedding'].detach().numpy()
+        data = self.s3_client.load_image(path)
+        data = self._images_to_tensor(data)
+        pred = self.model.predict(data)
+        pred_np = pred.detach().numpy()
         return pred_np
 
 class CatsMatcher:
