@@ -85,12 +85,22 @@ class CatsMatcher:
             cl.distances = [f for _, f in filtered]
             yield cl
 
+    @staticmethod
+    def reduce_closest_cats(closest_cats):
+        reduced_closest_cats = {}
+        for cat in closest_cats:
+            if id(cat) not in reduced_closest_cats:
+                reduced_closest_cats[id(cat)] = cat
+        return reduced_closest_cats.values()
 
     def find_n_closest(self, for_check: List[Entity], stored_cats: List[Cat], max_n: int = 5, thr: float = 1):
         emb_for_check, _ = self._get_embeddings(for_check)
         stored_emb, stored_emb_belonging = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(stored_emb[0].size, stored_emb, emb_for_check, k=max_n)
         #closest = self.create_distances_df(for_check, stored_cats, D, I)
-        closest  = self.create_distances_df(for_check, stored_emb_belonging, D, I)
-        res = list(self.filter_by_thr(closest, thr))
+        persons_and_matched_cats = self.create_distances_df(for_check, stored_emb_belonging, D, I)
+        for person_id, person in enumerate(persons_and_matched_cats):
+            person.cats = self.reduce_closest_cats(person.cats)
+            persons_and_matched_cats[person_id] = person
+        res = list(self.filter_by_thr(persons_and_matched_cats, thr))
         return res

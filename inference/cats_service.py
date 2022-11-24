@@ -22,8 +22,6 @@ class CatsService(CatsServiceBase):
         self.predictor = Predictor(config.s3_client_config)
         self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
 
-
-
     def save_new_cat(self, cat: Cat) -> bool:
       #  emb = self.predictor.predict(cat.paths)
        # cat.embeddings = emb.tolist()

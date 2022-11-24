@@ -12,8 +12,6 @@ from telegram_bot.cats_queue.producer import Producer
 from telegram_bot.middleware import AlbumMiddleware
 from telegram_bot.s3_client import YandexS3Client
 
-KAFKA_MSG_FIELDS = ['cat_name', 'image_path', 'additional_info', 'quadkey', 'image_path', 'user_id']# this name we're sending to Kafka q\
-# сделать dataclass
 
 bot = Bot(token=bot_config.token)#bot_config.token)
 storage = MemoryStorage()
@@ -25,14 +23,12 @@ class RStates(StatesGroup):
     find = State()
     geo = State()
     ask_extra_info = State()
-    sending_model_msg = State()
+
 @dp.message_handler(commands=['start'], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = []
-    #user_data = await state.get_data()
-    #print(user_data)
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
     keyboard.add(*buttons)
@@ -55,59 +51,14 @@ async def saw_cat(message: types.Message, state: FSMContext):
     await state.set_state(RStates.saw)
     await state.update_data(kafka_topic='saw_cat')
 
-# def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str):
-# #def to_message(user_id: str, image_path: str, additional_info: str, quadkey='no'):
-#     return {'user_id': user_id,
-#             'image_path': image_path,
-#             'additional_info': additional_info,
-#             'quadkey': quadkey}
-
 async def save_to_s3(message):
     image_name = "{0}.jpg".format(str(uuid.uuid4()))
     os.makedirs(bot_config.image_dir, exist_ok=True)
     image_path = os.path.join(bot_config.image_dir, image_name)
-    # image_path = image_name
     await message.photo[-1].download(image_path)
     s3_path = s3_client.save_image(image_path)
     os.remove(image_path)
     return s3_path
-
-
-
-
-# @dp.message_handler(state=QStates.find, content_types=['photo'])
-# async def process_find(message: types.Message, state: FSMContext):
-#     additional_info = message.to_python().get("caption", "")
-#     cat_info = await state.get_data()
-#     s3_path = await save_to_s3(message)
-#     cat_info['cat_info']['s3_paths'].append(s3_path)
-#     await state.update_data(cat_info=cat_info)
-#     print(cat_info)
-#
-#     kafka_message = to_message(
-#             str(message.from_user.id),
-#             s3_path,
-#             additional_info,
-#             'no_quad'
-#     )
-
- #   msg_id = kafka_message['user_id']
- #   kafka_producer.send(value=kafka_message, key=msg_id, topic='find_cat')
-   # await message.answer("Thanks! We notify you when we'll get any news")
-
-# @dp.message_handler(state=RStates.saw, content_types=['photo'])
-# async def process_saw(message: types.Message, state: FSMContext):
-#     additional_info = message.to_python().get("caption", "")
-#     s3_path = await save_to_s3(message)
-#     kafka_message = to_message(
-#         message.from_user.id,
-#         s3_path,
-#         additional_info,
-#         'no_quad'
-#     )
-#     msg_id = kafka_message['user_id']
-#     kafka_producer.send(value=kafka_message, key=msg_id, topic='saw_cat')
-#     await message.answer("Thank you !!!")
 
 @dp.message_handler(is_media_group=True, content_types=types.ContentType.ANY, state=[RStates.find, RStates.saw])
 async def save_album_to_s3(message: types.Message, album: list, state: FSMContext, cat_name: str):
@@ -120,11 +71,16 @@ async def save_album_to_s3(message: types.Message, album: list, state: FSMContex
             s3_path = await save_to_s3(message)
             s3_paths.append(s3_path)
 
-
     await state.set_state(RStates.ask_extra_info)
     await state.update_data(s3_paths=s3_paths, cat_name=cat_name)
     await message.answer("Please write some extra info about this cat")
 
+@dp.message_handler(content_types=['photo'], state=[RStates.find, RStates.saw])
+async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
+    s3_path = await save_to_s3(message)
+    await state.set_state(RStates.ask_extra_info)
+    await state.update_data(s3_paths=[s3_path], cat_name=cat_name)
+    await message.answer("Please write some extra info about this cat")
 
 @dp.message_handler(state=RStates.ask_extra_info, content_types=['text'])
 async def get_extra_info_and_send(message: types.Message, state: FSMContext):
@@ -164,35 +120,8 @@ async def send_msgs_to_model(cat_data):
                         key=_cat_data['cat_name'],
                         topic=_cat_data['kafka_topic']))
 
-    # for img_path in cat_data['s3_paths']:
-    #     _cat_data['image_path'] = img_path
-    #     kafka_message = get_kafka_message(_cat_data)
-    #     kafka_producer.send(value=kafka_message,
-    #                         key=_cat_data['cat_name'],
-    #                         topic=_cat_data['kafka_topic'])
-    #     print(kafka_message)
-
 
     return True
-
-
-
-
-
- #   kafka_producer.send(value=kafka_message, key=msg_id, topic='find_cat')
-
-#
-#
-#     kafka_message = to_message(
-#         message.from_user.id,
-#         s3_path,
-#         additional_info,
-#         'no_quad'
-#     )
-#     msg_id = kafka_message['user_id']
-#     kafka_producer.send(value=kafka_message, key=msg_id, topic='saw_cat')
-#     await message.answer("Thank you !!!")
-
 
 if __name__ == '__main__':
     dp.middleware.setup(AlbumMiddleware())
