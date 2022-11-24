@@ -1,5 +1,6 @@
 import os
 import uuid
+import mercantile
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -22,13 +23,30 @@ class QStates(StatesGroup):
     find = State()
     geo = State()
 
+def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
+    tile = mercantile.tile(lon, lat, zoom)
+    return mercantile.quadkey(tile)
+
+def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
+    return {'user_id': user_id,
+                 'image_path': image_path,
+                 'additional_info': additional_info,
+                 'quadkey': quadkey}
+
+async def save_to_s3(message):
+    image_name = "{0}.jpg".format(str(uuid.uuid4()))
+    os.makedirs(bot_config.image_dir, exist_ok=True)
+    image_path = os.path.join(bot_config.image_dir, image_name)
+    await message.photo[-1].download(image_path)
+    s3_path = s3_client.save_image(image_path)
+    os.remove(image_path)
+    return s3_path
+
 @dp.message_handler(commands=['start'], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = []
-    #user_data = await state.get_data()
-    #print(user_data)
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
     keyboard.add(*buttons)
@@ -48,36 +66,42 @@ async def saw_cat(message: types.Message, state: FSMContext):
                          reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(QStates.saw)
 
-def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
-    return {'user_id': user_id,
-                 'image_path': image_path,
-                 'additional_info': additional_info,
-                 'quadkey': quadkey}
-
-async def save_to_s3(message):
-    image_name = "{0}.jpg".format(str(uuid.uuid4()))
-    os.makedirs(bot_config.image_dir, exist_ok=True)
-    image_path = os.path.join(bot_config.image_dir, image_name)
-    await message.photo[-1].download(image_path)
-    s3_path = s3_client.save_image(image_path)
-    os.remove(image_path)
-    return s3_path
-
 @dp.message_handler(state=QStates.find, content_types=['photo'])
 async def process_find(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=message.from_user.id, topic='find_cat')
-    await message.answer("Thanks! We notify you when we'll get any news")
+    #kafka_message = to_message(message.from_user.id, s3_path, additional_info)
+    #kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
+    reply = "Would you like to share your location?"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton('Yes', request_location=True))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    await message.answer(reply, reply_markup=keyboard)
+    await state.set_state(QStates.geo)
+    await state.update_data(s3_path=s3_path,
+                            additional_info=additional_info,
+                            kafka_topic='find_cat')
 
 @dp.message_handler(state=QStates.saw, content_types=['photo'])
 async def process_saw(message: types.Message, state: FSMContext):
     additional_info = message.to_python().get("caption", "")
     s3_path = await save_to_s3(message)
-    kafka_message = to_message(message.from_user.id, s3_path, additional_info)
-    kafka_producer.send(value=kafka_message, key=message.from_user.id, topic='saw_cat')
-    await message.answer("Thank you !!!")
+    #kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
+    reply = "Would you like to share your location?"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton('Yes', request_location=True))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    await message.answer(reply, reply_markup=keyboard)
+    await state.set_state(QStates.geo)
+    await state.update_data(s3_path=s3_path,
+                            additional_info=additional_info,
+                            kafka_topic='saw_cat')
+
+#kafka_message = to_message(message.from_user.id, s3_path, additional_info)
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True, timeout=10*60)
