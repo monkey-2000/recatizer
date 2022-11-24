@@ -20,8 +20,7 @@ s3_client = YandexS3Client(bot_config.s3_client_config.aws_access_key_id, bot_co
 class QStates(StatesGroup):
     saw = State()
     find = State()
-    geo_saw = State()
-    geo_find = State()
+    geo = State()
 
 def point_to_quadkey(lon: float, lat: float, zoom: int=16) -> str:
     tile = mercantile.tile(lon, lat, zoom)
@@ -81,8 +80,10 @@ async def process_find(message: types.Message, state: FSMContext):
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     await message.answer(reply, reply_markup=keyboard)
-    await state.set_state(QStates.geo_find)
-    await state.update_data(s3_path=s3_path, additional_info=additional_info)
+    await state.set_state(QStates.geo)
+    await state.update_data(s3_path=s3_path,
+                            additional_info=additional_info,
+                            kafka_topic='find_cat')
 
 @dp.message_handler(state=QStates.saw, content_types=['photo'])
 async def process_saw(message: types.Message, state: FSMContext):
@@ -96,40 +97,44 @@ async def process_saw(message: types.Message, state: FSMContext):
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     await message.answer(reply, reply_markup=keyboard)
-    await state.set_state(QStates.geo_saw)
-    await state.update_data(s3_path=s3_path, additional_info=additional_info)
+    await state.set_state(QStates.geo)
+    await state.update_data(s3_path=s3_path,
+                            additional_info=additional_info,
+                            kafka_topic='saw_cat')
 
-@dp.message_handler(state=QStates.geo_find, content_types=['location'])
+@dp.message_handler(state=QStates.geo, content_types=['location'])
 async def handle_location(message: types.Message, state: FSMContext):
     lat = message.location.latitude
     lon = message.location.longitude
     quadkey = point_to_quadkey(lon, lat)
-    user_data = await state.get_data()
-    kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
-    kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
+    #user_data = await state.get_data()
+    #kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
+    #kafka_producer.send(value=kafka_message, key=id, topic='find_cat')
     #reply = "Thank you !!!"
-    reply = "Thanks! We notify you when we'll get any news"
+    reply = "Thanks!"
     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
+    await state.update_data(quadkey=quadkey)
 
-@dp.message_handler(state=QStates.geo_find)
-async def no_geo(message: types.Message, state: FSMContext):
-    await message.answer("Thanks! We notify you when we'll get any news", reply_markup=types.ReplyKeyboardRemove())
 
-@dp.message_handler(state=QStates.geo_saw, content_types=['location'])
-async def handle_location(message: types.Message, state: FSMContext):
-    lat = message.location.latitude
-    lon = message.location.longitude
-    quadkey = point_to_quadkey(lon, lat)
-    user_data = await state.get_data()
-    kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
-    kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
-    #reply = "Thank you !!!"
-    reply = "Thank you!"
-    await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
-
-@dp.message_handler(state=QStates.geo_saw)
-async def no_geo(message: types.Message, state: FSMContext):
-    await message.answer("Thank you!", reply_markup=types.ReplyKeyboardRemove())
+# @dp.message_handler(state=QStates.geo_find)
+# async def no_geo(message: types.Message, state: FSMContext):
+#     await message.answer("Thanks! We notify you when we'll get any news", reply_markup=types.ReplyKeyboardRemove())
+#
+# @dp.message_handler(state=QStates.geo_saw, content_types=['location'])
+# async def handle_location(message: types.Message, state: FSMContext):
+#     lat = message.location.latitude
+#     lon = message.location.longitude
+#     quadkey = point_to_quadkey(lon, lat)
+#     user_data = await state.get_data()
+#     kafka_message = to_message(message.from_user.id, user_data['s3_path'], user_data['additional_info'], quadkey)
+#     kafka_producer.send(value=kafka_message, key=id, topic='saw_cat')
+#     #reply = "Thank you !!!"
+#     reply = "Thank you!"
+#     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
+#
+# @dp.message_handler(state=QStates.geo_saw)
+# async def no_geo(message: types.Message, state: FSMContext):
+#     await message.answer("Thank you!", reply_markup=types.ReplyKeyboardRemove())
 
 
 if __name__ == '__main__':
