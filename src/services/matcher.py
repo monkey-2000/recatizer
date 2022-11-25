@@ -9,7 +9,7 @@ from src.entities.base import Entity
 from src.entities.cat import Cat, ClosestCats
 from src.ir_models.ir_cats_cls import CatIrClassificator
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
-from src.telegram_bot import YandexS3Client
+from src.utils.s3_client import YandexS3Client
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
 from train.utils.image_utils import  resize_image_if_needed
 

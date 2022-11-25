@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 
 import onnx
 import torch
+from dotenv import load_dotenv
 from onnx import shape_inference
 
 from train.export.export_dldt import export_dldt
@@ -76,13 +77,17 @@ class ModelExporter:
         export_dldt(onnx_model_path, self.save_path, input_shape=input_shape)
 
 
+
 if __name__ == "__main__":
+
+    load_dotenv()
+
     argparser = ArgumentParser()
     argparser.add_argument("--to", type=str, choices=("onnx", "dldt"), default="onnx")
     argparser.add_argument("--random_weights", type=str, required=False, default="0")
     argparser.add_argument("--config_name", type=str, default="tf_efficientnet_b0")
-    argparser.add_argument("--save_path", type=str, help="Path to save", default="/Users/alinatamkevich/dev/models")
-    argparser.add_argument("--model_weights", type=str, help="model weights path", default="/Users/alinatamkevich/dev/models/tf_efficientnet_b0_last")
+    argparser.add_argument("--save_path", type=str, help="Path to save", default=os.environ.get('PROJECT_DIR') +"/models")
+    argparser.add_argument("--model_weights", type=str, help="model weights path", default=os.environ.get('PROJECT_DIR') +"/models/tf_efficientnet_b0_last")
     argparser.add_argument("--model_name", help="model name", default="classificator")
 
     argparser.add_argument("--rows_cols", type=str, default="[128, 128]")

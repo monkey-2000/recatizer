@@ -9,7 +9,7 @@ from kafka.consumer.fetcher import ConsumerRecord
 from src.services.cats_service import CatsService
 from src.configs.service_config import default_service_config
 from src.entities.cat import Cat
-from src.entities import Person
+from src.entities.person import Person
 
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
@@ -47,10 +47,10 @@ class MsgConsumer:
         topic = msg.topic
         message = msg.value
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, path=message['image_path'], quadkey=message["quadkey"],
+            self.inference.add_user(Person(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
                    embeddings=None, chat_id=message["user_id"]))
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, path=message['image_path'], quadkey=message["quadkey"],
+            self.inference.save_new_cat(Cat(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
                                            embeddings=None, additional_info=message["additional_info"]))
 
     def main_loop(self):

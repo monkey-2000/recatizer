@@ -7,6 +7,6 @@ import numpy as np
 @dataclass
 class Entity(abc.ABC):
     _id: Optional[str]
-    path: str
+    paths: str
     quadkey: str
     embeddings: Optional[List[float]]

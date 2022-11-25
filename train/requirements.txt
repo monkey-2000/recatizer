@@ -1,1 +1,4 @@
-cv_models
+cv_model
+onnx
+IPython
+fastseg
