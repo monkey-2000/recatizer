@@ -3,6 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
+from src.telegram_bot.configs.bot_base_configs import TgBotConfig, S3ClientConfig, KafkaConsumerCfg
+
 load_dotenv()
 
 consumer_msg_cfd = KafkaConsumerCfg(
@@ -27,10 +29,11 @@ consumer_msg_cfd = KafkaConsumerCfg(
                                         processes=2
                                         )
 
-##### project. not used now
+
 bot_config = TgBotConfig(
                 token=os.environ.get('BOT_TOKEN'),
-                image_dir=os.environ.get('image_dir'),
+                image_dir=os.environ.get('PROJECT_DIR') + '/tmp',
+                kafka_server=['localhost:9092'],#['51.250.29.33:9092']
                 s3_client_config=S3ClientConfig(
                     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
                     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
