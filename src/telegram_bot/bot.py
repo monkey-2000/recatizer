@@ -27,7 +27,7 @@ def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
     tile = mercantile.tile(lon, lat, zoom)
     return mercantile.quadkey(tile)
 
-def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = ""):
+def to_message(user_id: str, image_path: str, additional_info: str, quadkey: str = 'no quad'):
     return {'user_id': user_id,
                  'image_path': image_path,
                  'additional_info': additional_info,
@@ -108,7 +108,13 @@ async def handle_location(message: types.Message, state: FSMContext):
     kafka_producer.send(value=kafka_message, key=id, topic=user_data['kafka_topic'])
     reply = "Thanks!"
     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
-    #await state.update_data(quadkey=quadkey)
+    # await state.update_data(quadkey=quadkey)
+
+    #перенести в другой хэндлер
+    # user_data = await state.get_data()
+    # kafka_message = to_message(message.from_user.id, user_data['s3_path'],
+    #                            user_data['additional_info'], user_data['quadkey'])
+    # kafka_producer.send(value=kafka_message, key=id, topic=user_data['kafka_topic'])
 
 
 if __name__ == '__main__':
