@@ -1,6 +1,7 @@
 import os
 import uuid
 
+import mercantile
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -23,6 +24,7 @@ class RStates(StatesGroup):
     find = State()
     geo = State()
     ask_extra_info = State()
+    send_message = State()
 
 @dp.message_handler(commands=['start'], state="*")
 async def start(message: types.Message, state: FSMContext):
@@ -60,6 +62,10 @@ async def save_to_s3(message):
     os.remove(image_path)
     return s3_path
 
+def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
+    tile = mercantile.tile(lon, lat, zoom)
+    return mercantile.quadkey(tile)
+
 @dp.message_handler(is_media_group=True, content_types=types.ContentType.ANY, state=[RStates.find, RStates.saw])
 async def save_album_to_s3(message: types.Message, album: list, state: FSMContext, cat_name: str):
     """This handler will receive a complete album of any type."""
@@ -82,35 +88,41 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
     await state.update_data(s3_paths=[s3_path], cat_name=cat_name)
     await message.answer("Please write some extra info about this cat")
 
+
 @dp.message_handler(state=RStates.ask_extra_info, content_types=['text'])
 async def get_extra_info_and_send(message: types.Message, state: FSMContext):
-
     await state.update_data(additional_info=message.text)
-    await message.answer("Wait a minute. Now we telling the Recatizer about your cat...")
+    reply = "Would you like to share your location?"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton('Yes', request_location=True))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    await message.answer(reply, reply_markup=keyboard)
+    await state.set_state(RStates.geo)
+
+@dp.message_handler(state=RStates.geo, content_types=['location'])
+async def handle_location(message: types.Message, state: FSMContext):
+    lat = message.location.latitude
+    lon = message.location.longitude
+    quadkey = point_to_quadkey(lon, lat)
 
     cat_data = await state.get_data()
-    cat_data['quadkey'] = 'no quadkey'
+    cat_data['quadkey'] = quadkey
     cat_data['user_id'] = message.from_user.id
-
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
-        await message.answer("Sorry. Try again")
-    await message.answer("Thanks! We notify you when we'll get any news")
-
+        await message.answer(reply="Sorry. Try again",
+                             reply_markup=types.ReplyKeyboardRemove())
+    await message.answer("Thanks! We notify you when we'll get any news",
+                             reply_markup=types.ReplyKeyboardRemove())
 
 def get_kafka_message(_cat_data):
     kafka_message = {
             'user_id': _cat_data['user_id'],
-            'image_path': _cat_data['s3_paths'],
             'image_paths': _cat_data['s3_paths'],
             'additional_info': _cat_data['additional_info'],
             'quadkey': _cat_data['quadkey']}
-    # print(_cat_data)
-    # kafka_message = {}
-    # for key in _cat_data:
-    #     if key in fields:
-    #         kafka_message[key] = _cat_data[key]
-
     return kafka_message
 
 async def send_msgs_to_model(cat_data):
@@ -119,8 +131,6 @@ async def send_msgs_to_model(cat_data):
     print(kafka_producer.send(value=kafka_message,
                         key=_cat_data['cat_name'],
                         topic=_cat_data['kafka_topic']))
-
-
     return True
 
 if __name__ == '__main__':
