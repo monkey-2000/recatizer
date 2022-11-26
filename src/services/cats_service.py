@@ -39,7 +39,13 @@ class CatsService(CatsServiceBase):
 
     def __find_similar_cats(self, people: List[Person]):
         qudkeys = list({person.quadkey for person in people})
-        cats = self.cats_db.find({'quadkey': {"$in": qudkeys}})
+
+        query = {'quadkey': {"$in": qudkeys}}
+        if 'no quadkey' in qudkeys:
+            query = {}
+
+        cats = self.cats_db.find(query)
+
         if not cats:
             return
         closest_cats = self.matcher.find_n_closest(people, cats)
