@@ -13,6 +13,7 @@ screen -dmS KAFKA bash -c './bin/kafka-server-start.sh config/server.properties'
 cd $curdir
 echo KAFKA and ZOOKIPER are started
 
+sudo systemctl start mongod.service
 
 if [ -n "$1" ]
 then
