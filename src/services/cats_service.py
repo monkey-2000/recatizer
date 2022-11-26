@@ -25,8 +25,10 @@ class CatsService(CatsServiceBase):
 
 
     def save_new_cat(self, cat: Cat) -> bool:
-        emb = self.predictor.predict(cat.path)
-        cat.embeddings = emb.tolist()
+        # emb = self.predictor.predict(cat.path)
+        # cat.embeddings = emb.tolist()
+
+        cat.embeddings = self.get_embs(cat.paths)
         ans = self.cats_db.save(cat)
         if not ans:
             logging.error("Cat wasn't saved!!!")
@@ -52,9 +54,17 @@ class CatsService(CatsServiceBase):
     def delete_user(self, chat_id: str):
         self.people_db.delete({'chat_id': id})
 
+    def get_embs(self, paths):
+        embs = []
+        for path in paths:
+            emb = self.predictor.predict(path)
+            embs.append(emb.tolist())
+        return embs
+
     def add_user(self, person: Person):
-        emb = self.predictor.predict(person.path)
-        person.embeddings = emb.tolist()
+        # emb = self.predictor.predict(person.paths)
+        # person.embeddings = emb.tolist()
+        person.embeddings = self.get_embs(person.paths)
         person = self.people_db.save(person)
         self.__find_similar_cats([person])
 
