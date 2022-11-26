@@ -70,5 +70,6 @@ class CatsService(CatsServiceBase):
 
 if __name__ == '__main__':
     service = CatsService(default_service_config)
+    service.save_new_cat(Cat(path="recatizer-bucket/users_data/004a9fe6-2820-4273-8a3e-59f67898cee5_0.jpg", additional_info={}, quadkey="", id=None, embeddings=None))
 
 

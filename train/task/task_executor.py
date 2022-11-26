@@ -5,15 +5,15 @@ import wandb
 from tqdm import tqdm
 from typing import Dict, Union, List
 from torch.utils.data.dataloader import DataLoader
-import warnings
+import torchmetrics
 import torch.nn as nn
 from train.configs.base_config import OptimizerParams, ModelConfig
 from train.optimizers.base_criterion import BaseLossAndMetricCriterion
 from timm.utils import AverageMeter
-
+from collections import defaultdict
 from train.optimizers.optimizer_builder import OptimizerBuilder
 from train.task.callbacks.base import CallbacksCollection, Callback
-from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver
+from train.task.callbacks.callbacks import TensorBoard, JsonMetricSaver, WanDBMetricSaver, WanDBModelSaver
 from train.utils.checkpoint_utils import CheckpointHandler
 
 
@@ -23,7 +23,6 @@ class MetricsCollection:
     """
 
     def __init__(self):
-        self.stop_training = False
         self.best_loss = float('inf')
         self.best_epoch = 0
         self.train_metrics = {}
@@ -32,7 +31,7 @@ class MetricsCollection:
 
 class TaskRunner:
 
-    def __init__(self, model: nn.Module,
+    def __init__(self, wandb_run, model: nn.Module,
                  criterion: BaseLossAndMetricCriterion,
                  optimizer_config: OptimizerParams,
                  model_config: ModelConfig,
@@ -40,6 +39,7 @@ class TaskRunner:
                  test_every: int = 5,
                  device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
 
+        self.wandb_run = wandb_run
         self.device = device
         self.test_every = test_every
         self.checkpoint_handler = CheckpointHandler(model_config)
@@ -48,7 +48,7 @@ class TaskRunner:
         self.model_config = model_config
         self.model.to(self.device)
         self.criterion = criterion
-        self.avg_meters = {}
+        self.avg_meters = defaultdict(AverageMeter)
         self.optimizer, self.lr_scheduler = OptimizerBuilder(optimizer_config).build(model)
         self.save_folder = save_folder
         self.weights_save_path = os.path.join('results', 'weights', self.save_folder)
@@ -57,7 +57,7 @@ class TaskRunner:
         self.callbacks = CallbacksCollection(self._create_basic_callbacks())
         self.lr = optimizer_config.lr
         self.separate_step = True
-
+        self.metric = torchmetrics.Accuracy()
         self.nb_epoch = optimizer_config.epochs
         self.warmup_epoch = 0
         self.start_epoch = 0
@@ -80,6 +80,9 @@ class TaskRunner:
             JsonMetricSaver(self.logs_save_path,
                             self.optimizer,
                             self.metrics_collection),
+            WanDBMetricSaver(self.wandb_run, self.optimizer,
+                            self.metrics_collection),
+            WanDBModelSaver(self.wandb_run, self.model)
         ]
         return callbacks
 
@@ -90,14 +93,12 @@ class TaskRunner:
 
         mode_loader = loaders[mode]
         steps_per_epoch = len(mode_loader)
-        loss_meter = AverageMeter()
-        self.avg_meters = {"loss": loss_meter}
 
         iterator = tqdm(mode_loader)
         for batch_number, tasks_data  in enumerate(iterator):
             self.callbacks.on_batch_begin(batch_number)
-            self._make_step(tasks_data, epoch, batch_number, steps_per_epoch, training)
 
+            self._make_step(tasks_data, epoch, batch_number, steps_per_epoch, training)
             avg_metrics = {k: f"{v.avg:.4f}" for k, v in self.avg_meters.items()}
             iterator.set_postfix({"lr": float(self.lr_scheduler.get_last_lr()[-1]),
                                   "epoch": epoch,
@@ -106,18 +107,16 @@ class TaskRunner:
                                   })
             if training:
                 self.lr_scheduler.step()
+
+
             self.callbacks.on_batch_end(batch_number)
-        wandb.log({'epoch': epoch + 1, 'loss': self.avg_meters['loss']})
         return {k: v for k, v in self.avg_meters.items()}
 
 
 
     def _make_step(self, data: Dict[str, torch.Tensor], epoch, batch_number,
                    steps_per_epoch, training: bool):
-        """
-        Make step on single batch inside of this method. In case of multitasking - just batch after batch.
-        :param tasks_data: name of task and dict with batch
-        """
+
         if training:
             self.optimizer.zero_grad()
 
@@ -126,10 +125,8 @@ class TaskRunner:
         input = [i.to(self.device) for i in input]
 
         model_output = self.model(input)
-        assert isinstance(model_output, dict), "Model output must be dict because model exporting/serving relies on it"
 
-        loss = self.criterion.calculate(model_output, data, training)
-        self.avg_meters['loss'].update(loss.item(), input[0].size(0))
+        loss = self.criterion.calculate(model_output, data, self.avg_meters, training)
 
         if math.isnan(loss.item()) or math.isinf(loss.item()):
             raise ValueError("NaN loss !!")
@@ -145,21 +142,18 @@ class TaskRunner:
         self.callbacks.on_train_begin()
         for epoch in range(self.start_epoch, self.nb_epoch):
             self.callbacks.on_epoch_begin(epoch)
+
+
             self.model.train()
             self.metrics_collection.train_metrics = self._run_one_epoch(epoch, loaders, training=True)
             self.checkpoint_handler.save_last(model=self.model, current_epoch=epoch,
                                               current_metrics=self.metrics_collection.train_metrics)
-            if epoch >= self.warmup_epoch and not self.step_mode_schedule:
-                self.lr_scheduler.step(epoch)
+            self.lr_scheduler.step(epoch)
 
             if (epoch + 1) % self.test_every == 0:
                 self.model.eval()
                 with torch.no_grad():
                     self.metrics_collection.val_metrics = self._run_one_epoch(epoch, loaders, training=False)
-
-
-            if self.metrics_collection.stop_training:
-                break
 
             self.callbacks.on_epoch_end(epoch)
         self.callbacks.on_train_end()
