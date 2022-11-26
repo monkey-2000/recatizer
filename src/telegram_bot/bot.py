@@ -100,22 +100,31 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     keyboard.add(*buttons)
     await message.answer(reply, reply_markup=keyboard)
     await state.set_state(RStates.geo)
-
-@dp.message_handler(state=RStates.geo, content_types=['location'])
-async def handle_location(message: types.Message, state: FSMContext):
-    lat = message.location.latitude
-    lon = message.location.longitude
-    quadkey = point_to_quadkey(lon, lat)
-
     cat_data = await state.get_data()
-    cat_data['quadkey'] = quadkey
+    cat_data['quadkey'] = 'no quadkey'
     cat_data['user_id'] = message.from_user.id
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(reply="Sorry. Try again",
                              reply_markup=types.ReplyKeyboardRemove())
     await message.answer("Thanks! We notify you when we'll get any news",
-                             reply_markup=types.ReplyKeyboardRemove())
+                         reply_markup=types.ReplyKeyboardRemove())
+
+# @dp.message_handler(state=RStates.geo, content_types=['location'])
+# async def handle_location(message: types.Message, state: FSMContext):
+#     lat = message.location.latitude
+#     lon = message.location.longitude
+#     quadkey = point_to_quadkey(lon, lat)
+#
+#     cat_data = await state.get_data()
+#     cat_data['quadkey'] = quadkey
+#     cat_data['user_id'] = message.from_user.id
+#     is_sent = await send_msgs_to_model(cat_data)
+#     if not is_sent:
+#         await message.answer(reply="Sorry. Try again",
+#                              reply_markup=types.ReplyKeyboardRemove())
+#     await message.answer("Thanks! We notify you when we'll get any news",
+#                              reply_markup=types.ReplyKeyboardRemove())
 
 def get_kafka_message(_cat_data):
     kafka_message = {
