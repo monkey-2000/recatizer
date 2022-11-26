@@ -110,7 +110,7 @@ async def handle_location(message: types.Message, state: FSMContext):
     await message.answer(reply, reply_markup=types.ReplyKeyboardRemove())
     # await state.update_data(quadkey=quadkey)
 
-    #перенести в другой хэндлер
+    # перенести в другой хэндлер
     # user_data = await state.get_data()
     # kafka_message = to_message(message.from_user.id, user_data['s3_path'],
     #                            user_data['additional_info'], user_data['quadkey'])
