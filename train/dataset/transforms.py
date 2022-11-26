@@ -46,10 +46,10 @@ def _build_blurs() -> List[BasicTransform]:
     return blurs
 
 
-def get_transforms_train(image_size, p=1, **kwargs):
+def get_transforms_train(image_size, p=0.8, **kwargs):
     augmentations = [
         # We apply all visual augmentations at first
-        HueSaturationValue(p=0.5),
+        HueSaturationValue(p=0.3),
         RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, brightness_by_max=False, p=0.5),
         OneOf(_build_blurs(), p=0.2),
         ImageCompression(quality_lower=10, quality_upper=100, p=0.3),
@@ -57,7 +57,7 @@ def get_transforms_train(image_size, p=1, **kwargs):
         Rotate(limit=10, p=0.3),
         Resize(image_size[0], image_size[1], always_apply=True),
         CoarseDropout(max_holes=2, max_height=10, max_width=10),
-        ToTensor(),
+        #ToTensor(),
     ]
     return Compose(augmentations, p=p, **kwargs)
 

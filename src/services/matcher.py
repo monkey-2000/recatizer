@@ -9,7 +9,8 @@ from src.entities.base import Entity
 from src.entities.cat import Cat, ClosestCats
 from src.ir_models.ir_cats_cls import CatIrClassificator
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
-from src.telegram_bot import YandexS3Client
+from src.utils.s3_client import YandexS3Client
+
 from train.configs.tf_efficientnet_b0_config import tf_efficientnet_b0_config
 from train.utils.image_utils import  resize_image_if_needed
 
@@ -25,21 +26,20 @@ class Predictor:
         """ As input is image, img always comes in channels_last format """
         shape = img.shape
         assert len(shape) == 3 or len(shape) == 4, "Expecting tensor with dims 3 or 4"
+        image = resize_image_if_needed(img, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
 
         # Update single image to batch of size 1
         if len(shape) == 3:
-            img = np.expand_dims(img, axis=0)
-
-        image = resize_image_if_needed(img, self.image_size[0], self.image_size[1], interpolation=cv2.INTER_LINEAR)
-        img = np.expand_dims(image, axis=0)
-        return img
+            image = np.expand_dims(image, axis=0)
+        image = np.moveaxis(image, -1, 1).astype(np.float32)
+        image = np.expand_dims(image, axis=0)
+        return image
 
     def predict(self, path: str):
         data = self.s3_client.load_image(path)
         data = self._images_to_tensor(data)
         pred = self.model.predict(data)
-        pred_np = pred.detach().numpy()
-        return pred_np
+        return pred[0]
 
 class CatsMatcher:
     def __init__(self):

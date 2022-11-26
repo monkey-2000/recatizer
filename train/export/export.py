@@ -85,7 +85,7 @@ if __name__ == "__main__":
     argparser.add_argument("--model_weights", type=str, help="model weights path", default="/Users/alinatamkevich/dev/models/tf_efficientnet_b0_last")
     argparser.add_argument("--model_name", help="model name", default="classificator")
 
-    argparser.add_argument("--rows_cols", type=str, default="[128, 128]")
+    argparser.add_argument("--rows_cols", type=str, default="[256, 256]")
     argparser.add_argument("--channels", type=str, default=3)
     args = argparser.parse_args()
 
