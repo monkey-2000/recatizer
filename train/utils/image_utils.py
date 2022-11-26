@@ -48,3 +48,9 @@ def resize_image_if_needed(image: Array, target_height: Optional[int], target_wi
     if (width, height) != (target_width, target_height):
         image = cv2.resize(image, dsize=(target_width, target_height), interpolation=interpolation)
     return image
+
+
+
+def image_visualize(image: Array):
+    plt.imshow(image)
+    plt.show()
