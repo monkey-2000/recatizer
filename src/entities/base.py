@@ -4,6 +4,7 @@ from typing import Optional, List
 
 import numpy as np
 
+
 @dataclass
 class Entity(abc.ABC):
     _id: Optional[str]

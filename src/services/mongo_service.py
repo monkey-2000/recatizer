@@ -7,7 +7,6 @@ from src.entities.person import Person
 
 
 class MongoClientBase(ABC):
-
     @abstractmethod
     def delete(self, query: dict):
         pass
@@ -22,7 +21,6 @@ class MongoClientBase(ABC):
 
 
 class CatsMongoClient(MongoClientBase):
-
     def __init__(self, db):
         self.cats_collection = db.cats
 
@@ -35,13 +33,13 @@ class CatsMongoClient(MongoClientBase):
         cats = [Cat.from_bson(cat) for cat in cats]
         return cats
 
-
     def save(self, cat: Cat) -> Optional[Cat]:
         ans = self.cats_collection.insert_one(cat.as_json_wo_none())
         cat._id = ans.inserted_id
         if not ans.acknowledged:
             return None
         return cat
+
 
 class PeopleMongoClient(MongoClientBase):
     def __init__(self, db):

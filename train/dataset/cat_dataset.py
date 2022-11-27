@@ -13,7 +13,9 @@ from sklearn.preprocessing import LabelEncoder
 
 
 class CatsDataset(Dataset):
-    def __init__(self, dir_path: str, path_to_csv: str, transforms: Optional[Callable] = None):
+    def __init__(
+        self, dir_path: str, path_to_csv: str, transforms: Optional[Callable] = None
+    ):
         self.df = self.__load_df__(dir_path, path_to_csv)
         self.transforms = transforms
 
@@ -25,7 +27,7 @@ class CatsDataset(Dataset):
         df = pd.read_csv(path)
         df["path"] = df["path"].apply(lambda img_path: os.path.join(dir_path, img_path))
         df["cat_id"] = LabelEncoder().fit_transform(df["cat_id"])
-        df = df[df.format == 'jpg']
+        df = df[df.format == "jpg"]
         return df
 
     @classmethod
@@ -34,22 +36,21 @@ class CatsDataset(Dataset):
         image = image_utils.read_image(path)
         return {"image": image, "name": os.path.basename(path), "path": path}
 
-
     def _apply_transforms(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Apply custom transformations for a single sample"""
         return data if self.transforms is None else self.transforms(**data)
-
 
     def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
         image_path = self.image_paths[index]
         data = self._read_image(image_path)
         from matplotlib import pyplot as plt
-        plt.imshow(data['image'])
+
+        plt.imshow(data["image"])
         plt.show()
 
         data.update(label=self.targets[index])
         data = self._apply_transforms(data)
-        plt.imshow(data['image'])
+        plt.imshow(data["image"])
         plt.show()
         return data
 

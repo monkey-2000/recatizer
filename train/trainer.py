@@ -30,9 +30,9 @@ def process(wandb_run, action: str, cfg: Config):
     elif action == "vis_data":
         loader = task.get_train_loaders()
         data = []
-        columns=["image", "label"]
+        columns = ["image", "label"]
         for i, batch in enumerate(loader, 0):
-            inputs, labels = batch['image'], batch['label']
+            inputs, labels = batch["image"], batch["label"]
             for j, image in enumerate(inputs, 0):
                 data.append([wandb.Image(image), labels[j].item()])
             break
@@ -40,11 +40,12 @@ def process(wandb_run, action: str, cfg: Config):
         table = wandb.Table(data=data, columns=columns)
         wandb_run.log({"cats_images": table})
 
+
 def main():
     args = parse()
     warnings.filterwarnings("ignore", ".*does not have many workers.*")
     cfg: Config = load(args.config_name)
-    run = wandb.init(project='recatizer_proj2', entity='recatizer')
+    run = wandb.init(project="recatizer_proj2", entity="recatizer")
 
     if not cfg:
         raise RuntimeError(f"not found config_name: {args.config_name}")

@@ -14,11 +14,16 @@ from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
-bot = Bot(token=bot_config.token)#bot_config.token)
+bot = Bot(token=bot_config.token)  # bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
-s3_client = YandexS3Client(bot_config.s3_client_config.aws_access_key_id, bot_config.s3_client_config.aws_secret_access_key)
+s3_client = YandexS3Client(
+    bot_config.s3_client_config.aws_access_key_id,
+    bot_config.s3_client_config.aws_secret_access_key,
+)
+
+
 class RStates(StatesGroup):
     saw = State()
     find = State()
@@ -26,7 +31,8 @@ class RStates(StatesGroup):
     ask_extra_info = State()
     send_message = State()
 
-@dp.message_handler(commands=['start'], state="*")
+
+@dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -34,24 +40,31 @@ async def start(message: types.Message, state: FSMContext):
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
     keyboard.add(*buttons)
-    await message.answer("Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat", reply_markup=keyboard)
+    await message.answer(
+        "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
+        reply_markup=keyboard,
+    )
+
 
 @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
 async def lost_cat(message: types.Message, state: FSMContext):
-    await message.answer("Please upload photo of your cat",
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Please upload photo of your cat", reply_markup=types.ReplyKeyboardRemove()
+    )
 
     await state.set_state(RStates.find)
-    await state.update_data(kafka_topic='find_cat')
+    await state.update_data(kafka_topic="find_cat")
 
 
 @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
 async def saw_cat(message: types.Message, state: FSMContext):
-    await message.answer("Please upload photo of cat",
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Please upload photo of cat", reply_markup=types.ReplyKeyboardRemove()
+    )
 
     await state.set_state(RStates.saw)
-    await state.update_data(kafka_topic='saw_cat')
+    await state.update_data(kafka_topic="saw_cat")
+
 
 async def save_to_s3(message):
     image_name = "{0}.jpg".format(str(uuid.uuid4()))
@@ -62,12 +75,20 @@ async def save_to_s3(message):
     os.remove(image_path)
     return s3_path
 
+
 def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
     tile = mercantile.tile(lon, lat, zoom)
     return mercantile.quadkey(tile)
 
-@dp.message_handler(is_media_group=True, content_types=types.ContentType.ANY, state=[RStates.find, RStates.saw])
-async def save_album_to_s3(message: types.Message, album: list, state: FSMContext, cat_name: str):
+
+@dp.message_handler(
+    is_media_group=True,
+    content_types=types.ContentType.ANY,
+    state=[RStates.find, RStates.saw],
+)
+async def save_album_to_s3(
+    message: types.Message, album: list, state: FSMContext, cat_name: str
+):
     """This handler will receive a complete album of any type."""
     # media_group = types.MediaGroup()
 
@@ -81,7 +102,8 @@ async def save_album_to_s3(message: types.Message, album: list, state: FSMContex
     await state.update_data(s3_paths=s3_paths, cat_name=cat_name)
     await message.answer("Please write some extra info about this cat")
 
-@dp.message_handler(content_types=['photo'], state=[RStates.find, RStates.saw])
+
+@dp.message_handler(content_types=["photo"], state=[RStates.find, RStates.saw])
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
@@ -89,37 +111,47 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
     await message.answer("Please write some extra info about this cat")
 
 
-@dp.message_handler(state=RStates.ask_extra_info, content_types=['text'])
+@dp.message_handler(state=RStates.ask_extra_info, content_types=["text"])
 async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     await state.update_data(additional_info=message.text)
 
     cat_data = await state.get_data()
-    cat_data['quadkey'] = 'no quadkey'
-    cat_data['user_id'] = message.from_user.id
+    cat_data["quadkey"] = "no quadkey"
+    cat_data["user_id"] = message.from_user.id
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
-        await message.answer(reply="Sorry. Try again",
-                             reply_markup=types.ReplyKeyboardRemove())
-    await message.answer("Thanks! We notify you when we'll get any news",
-                         reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(
+            reply="Sorry. Try again", reply_markup=types.ReplyKeyboardRemove()
+        )
+    await message.answer(
+        "Thanks! We notify you when we'll get any news",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+
 
 def get_kafka_message(_cat_data):
     kafka_message = {
-            'user_id': _cat_data['user_id'],
-            'image_paths': _cat_data['s3_paths'],
-            'additional_info': _cat_data['additional_info'],
-            'quadkey': _cat_data['quadkey']}
+        "user_id": _cat_data["user_id"],
+        "image_paths": _cat_data["s3_paths"],
+        "additional_info": _cat_data["additional_info"],
+        "quadkey": _cat_data["quadkey"],
+    }
     return kafka_message
+
 
 async def send_msgs_to_model(cat_data):
     _cat_data = cat_data.copy()
     kafka_message = get_kafka_message(_cat_data)
-    print(kafka_producer.send(value=kafka_message,
-                        key=_cat_data['cat_name'],
-                        topic=_cat_data['kafka_topic']))
+    print(
+        kafka_producer.send(
+            value=kafka_message,
+            key=_cat_data["cat_name"],
+            topic=_cat_data["kafka_topic"],
+        )
+    )
     return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dp.middleware.setup(AlbumMiddleware())
-    executor.start_polling(dp, skip_updates=True, timeout=10*60)
+    executor.start_polling(dp, skip_updates=True, timeout=10 * 60)

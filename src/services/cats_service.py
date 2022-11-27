@@ -13,14 +13,17 @@ from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
 
 
 class CatsService(CatsServiceBase):
-
     def __init__(self, config: ServiceConfig):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
         self.matcher = CatsMatcher()
-        self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
-        self.bot_loader = DataUploader(config.bot_token, config.answer_time_dely, config.s3_client_config)
+        self.predictor = Predictor(
+            config.s3_client_config, config.models_path, config.local_models_path
+        )
+        self.bot_loader = DataUploader(
+            config.bot_token, config.answer_time_dely, config.s3_client_config
+        )
 
     def save_new_cat(self, cat: Cat) -> bool:
         cat.embeddings = self.get_embs(cat.paths)
@@ -28,15 +31,15 @@ class CatsService(CatsServiceBase):
         if not ans:
             logging.error("Cat wasn't saved!!!")
 
-        #TODO start checking all people who searching their cats min(5 min, 5 new cats)
+        # TODO start checking all people who searching their cats min(5 min, 5 new cats)
         self.__recheck_cats_in_search(cat.quadkey)
         return True
 
     def __find_similar_cats(self, people: List[Person]):
         qudkeys = list({person.quadkey for person in people})
 
-        query = {'quadkey': {"$in": qudkeys}}
-        if 'no quadkey' in qudkeys:
+        query = {"quadkey": {"$in": qudkeys}}
+        if "no quadkey" in qudkeys:
             query = {}
 
         cats = self.cats_db.find(query)
@@ -49,11 +52,11 @@ class CatsService(CatsServiceBase):
                 self.bot_loader.upload(cl)
 
     def __recheck_cats_in_search(self, quadkey: str):
-        people = self.people_db.find({'quadkey': quadkey})
+        people = self.people_db.find({"quadkey": quadkey})
         self.__find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
-        self.people_db.delete({'chat_id': id})
+        self.people_db.delete({"chat_id": id})
 
     def get_embs(self, paths):
         embs = []
@@ -67,8 +70,15 @@ class CatsService(CatsServiceBase):
         person = self.people_db.save(person)
         self.__find_similar_cats([person])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     service = CatsService(default_service_config)
-    service.save_new_cat(Cat(path="recatizer-bucket/users_data/004a9fe6-2820-4273-8a3e-59f67898cee5_0.jpg", additional_info={}, quadkey="", id=None, embeddings=None))
-
-
+    service.save_new_cat(
+        Cat(
+            path="recatizer-bucket/users_data/004a9fe6-2820-4273-8a3e-59f67898cee5_0.jpg",
+            additional_info={},
+            quadkey="",
+            id=None,
+            embeddings=None,
+        )
+    )

@@ -7,11 +7,18 @@ from timm.utils import AverageMeter
 
 class BaseLossAndMetricCriterion(ABC):
     def __init__(self):
-        self.device = torch.device('cuda')  # Estimator is responsible of setting correct value to this thing
+        self.device = torch.device(
+            "cuda"
+        )  # Estimator is responsible of setting correct value to this thing
 
     @abstractmethod
-    def calculate(self, output: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor], avg_meter: Dict[str, AverageMeter],
-                  training: bool) -> torch.Tensor:
+    def calculate(
+        self,
+        output: Dict[str, torch.Tensor],
+        target: Dict[str, torch.Tensor],
+        avg_meter: Dict[str, AverageMeter],
+        training: bool,
+    ) -> torch.Tensor:
         pass
 
     def on_epoch_start(self):
@@ -30,4 +37,4 @@ class BaseLossAndMetricCriterion(ABC):
         names and coefficients of loss terms to get final loss in monitoring
         :return:
         """
-        return {'loss': 1.}
+        return {"loss": 1.0}

@@ -12,12 +12,21 @@ class Cat(Entity):
 
     def as_json_wo_none(self):
 
-        return {key: value for key, value in dataclasses.asdict(self).items() if value is not None}
+        return {
+            key: value
+            for key, value in dataclasses.asdict(self).items()
+            if value is not None
+        }
 
     @staticmethod
     def from_bson(bson):
-        return Cat(_id=bson["_id"], paths=bson["paths"], quadkey=bson["quadkey"],
-                   embeddings=bson["embeddings"], additional_info=bson["additional_info"])
+        return Cat(
+            _id=bson["_id"],
+            paths=bson["paths"],
+            quadkey=bson["quadkey"],
+            embeddings=bson["embeddings"],
+            additional_info=bson["additional_info"],
+        )
 
 
 @dataclass

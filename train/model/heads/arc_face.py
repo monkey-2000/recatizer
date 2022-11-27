@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from torch import Tensor
 
+
 class ArcMarginProduct(nn.Module):
     r"""Implement of large margin arc distance: :
     Args:
@@ -26,7 +27,7 @@ class ArcMarginProduct(nn.Module):
         easy_margin=False,
         use_penalty=True,
         initialization="xavier",
-        device: torch.device = torch.device('cuda')
+        device: torch.device = torch.device("cuda"),
     ):
         super(ArcMarginProduct, self).__init__()
         self.device = device
@@ -78,8 +79,14 @@ class ArcMarginProduct(nn.Module):
 
 class ArcAdaptiveMarginProduct(nn.Module):
     def __init__(
-        self, in_features, out_features, margins, s=30.0, k=1, initialization="xavier",
-            device: torch.device = torch.device('cuda')
+        self,
+        in_features,
+        out_features,
+        margins,
+        s=30.0,
+        k=1,
+        initialization="xavier",
+        device: torch.device = torch.device("cuda"),
     ):
         super(ArcAdaptiveMarginProduct, self).__init__()
         self.in_features = in_features
@@ -103,7 +110,6 @@ class ArcAdaptiveMarginProduct(nn.Module):
         cosine_all = cosine_all.view(-1, self.out_features, self.k)
         cosine, _ = torch.max(cosine_all, dim=2)
         sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
-
 
         ms = self.margins[labels.clone().cpu().numpy()]
         cos_m = torch.from_numpy(np.cos(ms)).float().to(self.device)

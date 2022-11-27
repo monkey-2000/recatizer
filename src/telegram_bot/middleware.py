@@ -1,4 +1,3 @@
-
 import asyncio
 import uuid
 from typing import List, Union
@@ -7,9 +6,11 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.handler import CancelHandler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 
+
 class AlbumMiddleware(BaseMiddleware):
     """This middleware is for capturing media groups.
     [https://github.com/WhiteMemory99/aiogram_album_handler/blob/master/example/album.py]"""
+
     album_data: dict = {}
 
     def __init__(self, latency: Union[int, float] = 0.01):
@@ -41,10 +42,9 @@ class AlbumMiddleware(BaseMiddleware):
             message.conf["is_last"] = True
             data["cat_name"] = str(uuid.uuid4())
 
-    async def on_post_process_message(self, message: types.Message, result: dict, data: dict):
+    async def on_post_process_message(
+        self, message: types.Message, result: dict, data: dict
+    ):
         """Clean up after handling our album."""
         if message.media_group_id and message.conf.get("is_last"):
             del self.album_data[message.media_group_id]
-
-
-

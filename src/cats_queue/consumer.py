@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from kafka import KafkaConsumer, TopicPartition, OffsetAndMetadata
+from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
 import json
 from kafka.consumer.fetcher import ConsumerRecord
@@ -10,10 +10,10 @@ from src.services.cats_service import CatsService
 from src.configs.service_config import default_service_config
 from src.entities.cat import Cat
 from src.entities.person import Person
+from src.configs.service_config import default_service_config as config
 
-logger = logging.getLogger('chat_bot_logger')
+logger = logging.getLogger("chat_bot_logger")
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-
 
 
 class LimitedMultiprocessingPool(mp_pool.Pool):
@@ -22,19 +22,20 @@ class LimitedMultiprocessingPool(mp_pool.Pool):
 
 
 class MsgConsumer:
-    FIND_CAT_TOPIC = 'find_cat'
-    SAW_CAT_TOPIC = 'saw_cat'
+    FIND_CAT_TOPIC = "find_cat"
+    SAW_CAT_TOPIC = "saw_cat"
+
     def __init__(self):
         self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
 
         self.consumer = KafkaConsumer(
-            auto_offset_reset="earlest", #"latest",
+            auto_offset_reset="earlest",  # "latest",
             enable_auto_commit=True,
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=config.kafka_broker_ip,
             consumer_timeout_ms=1000,
-            value_deserializer=lambda v: json.loads(v.decode('ascii')),
-            key_deserializer=lambda v: json.loads(v.decode('ascii')),
-            group_id= "cat_group"
+            value_deserializer=lambda v: json.loads(v.decode("ascii")),
+            key_deserializer=lambda v: json.loads(v.decode("ascii")),
+            group_id="cat_group",
         )
         self.consumer.subscribe(self.topics)
         self.pool_cache_limit = 1
@@ -50,21 +51,35 @@ class MsgConsumer:
         message = msg.value
 
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
-                   embeddings=None, chat_id=message["user_id"]))
+            self.inference.add_user(
+                Person(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    chat_id=message["user_id"],
+                )
+            )
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, paths=message['image_paths'], quadkey=message["quadkey"],
-                                           embeddings=None, additional_info=message["additional_info"]))
+            self.inference.save_new_cat(
+                Cat(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    additional_info=message["additional_info"],
+                )
+            )
 
     def main_loop(self):
         while not self.stop_processing:
             for msg in self.consumer:
 
                 logger.info(msg)
-                logger.info('%d: %d: k=%s v=%s' % (msg.partition,
-                                             msg.offset,
-                                             msg.key,
-                                             msg.value))
+                logger.info(
+                    "%d: %d: k=%s v=%s"
+                    % (msg.partition, msg.offset, msg.key, msg.value)
+                )
 
                 if self.stop_processing:
                     break
@@ -73,9 +88,9 @@ class MsgConsumer:
         self.consumer.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    logger.setLevel('INFO')
+    logger.setLevel("INFO")
     fh = logging.StreamHandler(sys.stdout)
     fh.setFormatter(logging.Formatter(_log_format))
     fh.setLevel(level=logging.INFO)
@@ -86,7 +101,3 @@ if __name__ == '__main__':
 
     consumer = MsgConsumer()
     consumer.main_loop()
-
-
-
-

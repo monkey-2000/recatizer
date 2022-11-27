@@ -36,15 +36,25 @@ class BaseTask(ABC):
     def get_val_dataset(self) -> Dataset:
         raise NotImplementedError
 
-
     def get_train_loaders(self):
         dataset = self.get_train_dataset()
-        return DataLoader(dataset, num_workers=0, shuffle=True, drop_last=True, batch_size=self.dataset_config.batch_size)
+        return DataLoader(
+            dataset,
+            num_workers=0,
+            shuffle=True,
+            drop_last=True,
+            batch_size=self.dataset_config.batch_size,
+        )
 
     def get_val_loaders(self):
         dataset = self.get_val_dataset()
-        return DataLoader(dataset, num_workers=0, shuffle=False, drop_last=True, batch_size=self.dataset_config.batch_size)
-
+        return DataLoader(
+            dataset,
+            num_workers=0,
+            shuffle=False,
+            drop_last=True,
+            batch_size=self.dataset_config.batch_size,
+        )
 
     def get_model(self) -> nn.Module:
         raise NotImplementedError
@@ -62,7 +72,7 @@ class BaseTask(ABC):
             criterion,
             self.config.optimizer,
             self.config.model_config,
-            self.config.save_folder
+            self.config.save_folder,
         )
 
     def fit(self):
@@ -75,5 +85,3 @@ class BaseTask(ABC):
 
         loaders = {"train": train_loaders, "val": val_loaders}
         self.get_runner(self.wandb_run, model).fit(loaders)
-
-
