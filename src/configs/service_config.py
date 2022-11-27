@@ -27,6 +27,6 @@ default_service_config = ServiceConfig(
                 ),
     models_path=os.environ.get('MODEL_PATH'),
     local_models_path=os.environ.get('LOCAL_MODEL_PATH'),
-    answer_time_dely=5
+    answer_time_dely=5 ## dely time for bot loader (one cat  in 5 sec)
 )
 

@@ -22,12 +22,7 @@ class CatsService(CatsServiceBase):
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
         self.bot_loader = DataUploader(config.bot_token, config.answer_time_dely, config.s3_client_config)
 
-
-
     def save_new_cat(self, cat: Cat) -> bool:
-        # emb = self.predictor.predict(cat.path)
-        # cat.embeddings = emb.tolist()
-
         cat.embeddings = self.get_embs(cat.paths)
         ans = self.cats_db.save(cat)
         if not ans:
@@ -68,8 +63,6 @@ class CatsService(CatsServiceBase):
         return embs
 
     def add_user(self, person: Person):
-        # emb = self.predictor.predict(person.paths)
-        # person.embeddings = emb.tolist()
         person.embeddings = self.get_embs(person.paths)
         person = self.people_db.save(person)
         self.__find_similar_cats([person])
