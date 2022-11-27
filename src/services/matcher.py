@@ -46,7 +46,6 @@ class Predictor:
         data = self._images_to_tensor(data)
         pred = self.model.predict(data)
         return pred[0]
-        # return np.array([0] * 512)
 
 
 class CatsMatcher:

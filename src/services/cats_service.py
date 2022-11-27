@@ -39,7 +39,7 @@ class CatsService(CatsServiceBase):
         qudkeys = list({person.quadkey for person in people})
 
         query = {"quadkey": {"$in": qudkeys}}
-        if "no quadkey" in qudkeys:
+        if None in qudkeys:
             query = {}
 
         cats = self.cats_db.find(query)

@@ -14,7 +14,7 @@ from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
-bot = Bot(token=bot_config.token)  # bot_config.token)
+bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
 dp = Dispatcher(bot, storage=storage)
@@ -90,7 +90,6 @@ async def save_album_to_s3(
     message: types.Message, album: list, state: FSMContext, cat_name: str
 ):
     """This handler will receive a complete album of any type."""
-    # media_group = types.MediaGroup()
 
     s3_paths = []
     for message in album:
@@ -116,7 +115,7 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     await state.update_data(additional_info=message.text)
 
     cat_data = await state.get_data()
-    cat_data["quadkey"] = "no quadkey"
+    cat_data["quadkey"] = None
     cat_data["user_id"] = message.from_user.id
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
@@ -142,13 +141,12 @@ def get_kafka_message(_cat_data):
 async def send_msgs_to_model(cat_data):
     _cat_data = cat_data.copy()
     kafka_message = get_kafka_message(_cat_data)
-    print(
-        kafka_producer.send(
+    kafka_producer.send(
             value=kafka_message,
             key=_cat_data["cat_name"],
             topic=_cat_data["kafka_topic"],
         )
-    )
+
     return True
 
 
