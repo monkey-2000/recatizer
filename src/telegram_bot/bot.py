@@ -92,14 +92,7 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
 @dp.message_handler(state=RStates.ask_extra_info, content_types=['text'])
 async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     await state.update_data(additional_info=message.text)
-    reply = "Would you like to share your location?"
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = []
-    buttons.append(types.KeyboardButton('Yes', request_location=True))
-    buttons.append(types.KeyboardButton(text="No"))
-    keyboard.add(*buttons)
-    await message.answer(reply, reply_markup=keyboard)
-    await state.set_state(RStates.geo)
+
     cat_data = await state.get_data()
     cat_data['quadkey'] = 'no quadkey'
     cat_data['user_id'] = message.from_user.id
@@ -109,22 +102,6 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
                              reply_markup=types.ReplyKeyboardRemove())
     await message.answer("Thanks! We notify you when we'll get any news",
                          reply_markup=types.ReplyKeyboardRemove())
-
-# @dp.message_handler(state=RStates.geo, content_types=['location'])
-# async def handle_location(message: types.Message, state: FSMContext):
-#     lat = message.location.latitude
-#     lon = message.location.longitude
-#     quadkey = point_to_quadkey(lon, lat)
-#
-#     cat_data = await state.get_data()
-#     cat_data['quadkey'] = quadkey
-#     cat_data['user_id'] = message.from_user.id
-#     is_sent = await send_msgs_to_model(cat_data)
-#     if not is_sent:
-#         await message.answer(reply="Sorry. Try again",
-#                              reply_markup=types.ReplyKeyboardRemove())
-#     await message.answer("Thanks! We notify you when we'll get any news",
-#                              reply_markup=types.ReplyKeyboardRemove())
 
 def get_kafka_message(_cat_data):
     kafka_message = {
@@ -141,6 +118,7 @@ async def send_msgs_to_model(cat_data):
                         key=_cat_data['cat_name'],
                         topic=_cat_data['kafka_topic']))
     return True
+
 
 if __name__ == '__main__':
     dp.middleware.setup(AlbumMiddleware())

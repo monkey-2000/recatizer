@@ -36,6 +36,6 @@ bot_config = TgBotConfig(
                 kafka_server=['localhost:9092'],#['51.250.29.33:9092']
                 s3_client_config=S3ClientConfig(
                     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
-                )
+                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')),
+
 )

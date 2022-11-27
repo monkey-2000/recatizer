@@ -35,3 +35,4 @@ class TgBotConfig:
     kafka_server: list
     s3_client_config: S3ClientConfig
 
+

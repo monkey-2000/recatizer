@@ -20,7 +20,7 @@ class CatsService(CatsServiceBase):
         self.people_db = PeopleMongoClient(client.main)
         self.matcher = CatsMatcher()
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
-        self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
+        self.bot_loader = DataUploader(config.bot_token, config.answer_time_dely, config.s3_client_config)
 
 
 
