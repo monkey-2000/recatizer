@@ -106,7 +106,12 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    await state.update_data(s3_paths=[s3_path], cat_name=cat_name, person_name=None, user_id=message.from_user.id)
+    await state.update_data(
+        s3_paths=[s3_path],
+        cat_name=cat_name,
+        person_name=None,
+        user_id=message.from_user.id,
+    )
     await message.answer("Please write some extra info about this cat")
 
 
@@ -146,7 +151,8 @@ async def handle_location(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
 async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
-    cat_data["quadkey"] = None
+    cat_data["quadkey"] = "no quad"
+
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
