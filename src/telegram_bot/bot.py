@@ -91,12 +91,11 @@ async def save_album_to_s3(
 ):
     """This handler will receive a complete album of any type."""
 
-    s3_paths = 'none'
-    #s3_paths = []
-    # for message in album:
-    #     if message.photo:
-    #         s3_path = await save_to_s3(message)
-    #         s3_paths.append(s3_path)
+    s3_paths = []
+    for message in album:
+        if message.photo:
+            s3_path = await save_to_s3(message)
+            s3_paths.append(s3_path)
 
     await state.set_state(RStates.ask_extra_info)
     await state.update_data(s3_paths=s3_paths, cat_name=cat_name)
