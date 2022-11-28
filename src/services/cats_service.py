@@ -47,6 +47,7 @@ class CatsService(CatsServiceBase):
         if not cats:
             return
         closest_cats = self.matcher.find_n_closest(people, cats)
+        # TODO add cash for answers
         for cl in closest_cats:
             if cl.cats:
                 self.bot_loader.upload(cl)

@@ -106,18 +106,31 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    await state.update_data(s3_paths=[s3_path], cat_name=cat_name)
+    await state.update_data(s3_paths=[s3_path], cat_name=cat_name, person_name=None, user_id=message.from_user.id)
     await message.answer("Please write some extra info about this cat")
 
 
 @dp.message_handler(state=RStates.ask_extra_info, content_types=["text"])
 async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     await state.update_data(additional_info=message.text)
+    reply = "Would you like to share your location?"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton("Yes", request_location=True))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    await message.answer(reply, reply_markup=keyboard)
+    await state.set_state(RStates.geo)
 
+
+@dp.message_handler(state=RStates.geo, content_types=["location"])
+async def handle_location(message: types.Message, state: FSMContext):
+    lat = message.location.latitude
+    lon = message.location.longitude
+    quadkey = point_to_quadkey(lon, lat)
     cat_data = await state.get_data()
-    cat_data["quadkey"] = None
-    cat_data["person_name"] = None
-    cat_data["user_id"] = message.from_user.id
+    cat_data["quadkey"] = quadkey
+
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
@@ -127,6 +140,23 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
         "Thanks! We notify you when we'll get any news",
         reply_markup=types.ReplyKeyboardRemove(),
     )
+    await state.finish()
+
+
+@dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
+async def handle_location(message: types.Message, state: FSMContext):
+    cat_data = await state.get_data()
+    cat_data["quadkey"] = None
+    is_sent = await send_msgs_to_model(cat_data)
+    if not is_sent:
+        await message.answer(
+            reply="Sorry. Try again", reply_markup=types.ReplyKeyboardRemove()
+        )
+    await message.answer(
+        "Thanks! We notify you when we'll get any news",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+    await state.finish()
 
 
 def get_kafka_message(_cat_data):
@@ -144,10 +174,10 @@ async def send_msgs_to_model(cat_data):
     _cat_data = cat_data.copy()
     kafka_message = get_kafka_message(_cat_data)
     kafka_producer.send(
-            value=kafka_message,
-            key=_cat_data["cat_name"],
-            topic=_cat_data["kafka_topic"],
-        )
+        value=kafka_message,
+        key=_cat_data["cat_name"],
+        topic=_cat_data["kafka_topic"],
+    )
 
     return True
 
