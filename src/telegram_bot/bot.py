@@ -106,7 +106,12 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    await state.update_data(s3_paths=[s3_path], cat_name=cat_name, person_name=None, user_id=message.from_user.id)
+    await state.update_data(
+        s3_paths=[s3_path],
+        cat_name=cat_name,
+        person_name=None,
+        user_id=message.from_user.id,
+    )
     await message.answer("Please write some extra info about this cat")
 
 
@@ -116,14 +121,14 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     reply = "Would you like to share your location?"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
-    buttons.append(types.KeyboardButton('Yes', request_location=True))
+    buttons.append(types.KeyboardButton("Yes", request_location=True))
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     await message.answer(reply, reply_markup=keyboard)
     await state.set_state(RStates.geo)
 
 
-@dp.message_handler(state=RStates.geo, content_types=['location'])
+@dp.message_handler(state=RStates.geo, content_types=["location"])
 async def handle_location(message: types.Message, state: FSMContext):
     lat = message.location.latitude
     lon = message.location.longitude
@@ -136,24 +141,29 @@ async def handle_location(message: types.Message, state: FSMContext):
         await message.answer(
             reply="Sorry. Try again", reply_markup=types.ReplyKeyboardRemove()
         )
-    await message.answer("Thanks! We notify you when we'll get any news",
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Thanks! We notify you when we'll get any news",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
     await state.finish()
 
 
 @dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
 async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
-    cat_data["quadkey"] = 'no quad'
+    cat_data["quadkey"] = "no quad"
 
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
             reply="Sorry. Try again", reply_markup=types.ReplyKeyboardRemove()
         )
-    await message.answer("Thanks! We notify you when we'll get any news",
-                         reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Thanks! We notify you when we'll get any news",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
     await state.finish()
+
 
 def get_kafka_message(_cat_data):
     kafka_message = {
@@ -170,10 +180,10 @@ async def send_msgs_to_model(cat_data):
     _cat_data = cat_data.copy()
     kafka_message = get_kafka_message(_cat_data)
     kafka_producer.send(
-            value=kafka_message,
-            key=_cat_data["cat_name"],
-            topic=_cat_data["kafka_topic"],
-        )
+        value=kafka_message,
+        key=_cat_data["cat_name"],
+        topic=_cat_data["kafka_topic"],
+    )
 
     return True
 
