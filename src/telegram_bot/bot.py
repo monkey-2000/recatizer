@@ -116,6 +116,7 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
 
     cat_data = await state.get_data()
     cat_data["quadkey"] = None
+    cat_data["person_name"] = None
     cat_data["user_id"] = message.from_user.id
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
@@ -134,6 +135,7 @@ def get_kafka_message(_cat_data):
         "image_paths": _cat_data["s3_paths"],
         "additional_info": _cat_data["additional_info"],
         "quadkey": _cat_data["quadkey"],
+        "person_name": _cat_data["person_name"],
     }
     return kafka_message
 
