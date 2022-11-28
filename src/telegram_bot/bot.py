@@ -151,7 +151,7 @@ async def handle_location(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
 async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
-    cat_data["quadkey"] = "no quad"
+    cat_data["quadkey"] = None
 
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
