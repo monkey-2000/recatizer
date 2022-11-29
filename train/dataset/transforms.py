@@ -57,7 +57,7 @@ def get_transforms_train(image_size, p=0.8, **kwargs):
         Rotate(limit=10, p=0.3),
         Resize(image_size[0], image_size[1], always_apply=True),
         CoarseDropout(max_holes=2, max_height=10, max_width=10),
-        #ToTensor(),
+        ToTensor(),
     ]
     return Compose(augmentations, p=p, **kwargs)
 

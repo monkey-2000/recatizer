@@ -51,7 +51,17 @@ class PRMetric(BaseMetric):
 
         return {self._name[0]: np.nan_to_num(precision_array.mean()),
                             self._name[1]: np.nan_to_num(recall_array.mean())}
+class F1Score(PRMetric):
+    EPS = 1e-10
+    def __init__(self, num_classes: int):
+        super().__init__(num_classes)
 
+    def compute(self):
+        res = super(F1Score, self).compute()
+        precision = res["prec"]
+        recall = res["rec"]
+        f1_score = 2*precision*recall / (precision + recall + self.EPS)
+        return {"f1_score": f1_score}
 
 
 class AccuracyMetric(BaseMetric):

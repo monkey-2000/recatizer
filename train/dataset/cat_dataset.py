@@ -3,7 +3,6 @@ from typing import Dict
 from typing import Optional
 import os
 
-import cv2
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -43,14 +42,9 @@ class CatsDataset(Dataset):
     def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
         image_path = self.image_paths[index]
         data = self._read_image(image_path)
-        from matplotlib import pyplot as plt
-        plt.imshow(data['image'])
-        plt.show()
 
         data.update(label=self.targets[index])
         data = self._apply_transforms(data)
-        plt.imshow(data['image'])
-        plt.show()
         return data
 
     def __len__(self) -> int:
