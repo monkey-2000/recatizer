@@ -1,14 +1,11 @@
 import argparse
 import warnings
 
-import cv2
 
 from configs.utils import load
 import wandb
-from matplotlib import pyplot as plt
 from train.configs.base_config import Config
 from train.task.cats_task import CatsTask
-from train.utils.image_utils import image_visualize
 
 
 def parse():
@@ -18,7 +15,7 @@ def parse():
     parser.add_argument("--save_checkpoint", action="store_true")
     parser.add_argument("--wandb_logger", action="store_true")
     parser.add_argument("--config_name", default="tf_efficientnet_b0")
-    parser.add_argument("--action", default="vis_data")
+    parser.add_argument("--action", default="train")
     return parser.parse_args()
 
 
