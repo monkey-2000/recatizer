@@ -1,4 +1,6 @@
-import os.path
+import hashlib
+from os import path
+
 import cv2
 import boto3
 import numpy as np
@@ -17,8 +19,18 @@ class YandexS3Client:
         )
         self.bucket_name = bucket_name
 
+    @staticmethod
+    def _get_img_hash_name(img_path: str):
+        with open(img_path, "rb") as f:
+            _hash = hashlib.sha256(f.read()).hexdigest()
+        image_name = path.basename(img_path)
+        im_format = path.splitext(image_name)[1]
+        return  _hash + im_format
+
+
     def save_image(self, image_path: str):
-        s3_path = os.path.join("users_data", os.path.basename(image_path))
+        image_hash_name = self._get_img_hash_name(image_path)
+        s3_path = path.join("users_data", image_hash_name)
         self.s3.upload_file(image_path, self.bucket_name, s3_path)
         return s3_path
 

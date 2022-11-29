@@ -29,7 +29,7 @@ class MsgConsumer:
         self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
 
         self.consumer = KafkaConsumer(
-            auto_offset_reset="earlest",  # "latest",
+            auto_offset_reset="latest",#"earlest",  # "latest",
             enable_auto_commit=True,
             bootstrap_servers=config.kafka_broker_ip,
             consumer_timeout_ms=1000,

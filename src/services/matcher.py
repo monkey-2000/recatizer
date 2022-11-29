@@ -1,3 +1,4 @@
+from itertools import groupby
 from typing import List
 import cv2
 import faiss
@@ -111,7 +112,10 @@ class CatsMatcher:
         for cat in closest_cats:
             if id(cat) not in reduced_closest_cats:
                 reduced_closest_cats[id(cat)] = cat
+
         return reduced_closest_cats.values()
+
+
 
     def find_n_closest(
         self,
@@ -130,6 +134,7 @@ class CatsMatcher:
         )
         for person_id, person in enumerate(persons_and_matched_cats):
             person.cats = self.reduce_closest_cats(person.cats)
+            #person.cats = [g[0] for _, g in groupby(person.cats, lambda l: l[0])]
             persons_and_matched_cats[person_id] = person
         res = list(self.filter_by_thr(persons_and_matched_cats, thr))
         return res
