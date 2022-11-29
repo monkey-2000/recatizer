@@ -9,12 +9,12 @@ from src.utils.s3_client import YandexS3Client
 
 
 class DataUploader:
-    def __init__(self, token, answer_time_dely: int, s3_config: S3ClientConfig):
+    def __init__(self, token, s3_config: S3ClientConfig):
         self.bot = Bot(token)
         self.s3_client = YandexS3Client(
             s3_config.aws_access_key_id, s3_config.aws_secret_access_key
         )
-        self.answer_time_dely = answer_time_dely
+
 
     def upload(self, closest: ClosestCats):
 
@@ -34,4 +34,3 @@ class DataUploader:
                 media_group.append(InputMediaPhoto(media=cat_image_bytes))
             self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
             self.bot.send_message(closest.person.chat_id, cat.additional_info)
-            sleep(self.answer_time_dely)
