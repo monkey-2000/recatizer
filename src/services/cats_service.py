@@ -1,9 +1,10 @@
 import logging
 from typing import List
-import time
+
 
 from pymongo import MongoClient
 
+from src.services.cash_service import CatsCash
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
@@ -15,7 +16,7 @@ from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
 
 class CatsService(CatsServiceBase):
 
-    cash = {}
+
     def __init__(self, config: ServiceConfig):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
@@ -27,7 +28,8 @@ class CatsService(CatsServiceBase):
         self.bot_loader = DataUploader(
             config.bot_token, config.s3_client_config
         )
-        self.ansver_time_dely = config.answer_time_dely
+       # self.ansver_time_dely = config.answer_time_dely
+        self.cash = CatsCash(config.answer_time_dely)
 
     def save_new_cat(self, cat: Cat) -> bool:
         cat.embeddings = self.get_embs(cat.paths)
@@ -43,7 +45,9 @@ class CatsService(CatsServiceBase):
         qudkeys = list({person.quadkey for person in people})
 
         query = {"quadkey": {"$in": qudkeys}}
-        if None in qudkeys:
+        # TODO fix case with none
+      #  if None in qudkeys:
+        if'no_quad' in qudkeys:
             query = {}
 
         cats = self.cats_db.find(query)
@@ -54,10 +58,10 @@ class CatsService(CatsServiceBase):
         # TODO write metod which delete cats that have already been sent
 
         for cl in closest_cats:
-
+            cl = self.cash.answer_editor(cl)
             self.bot_loader.upload(cl)
             # TODO add cash for answers
-            # what_time_now = time.time()
+
             # if (cl.person.last_ans - what_time_now) > self.ansver_time_dely:
             #     self.bot_loader.upload(cl)
             #     # self.__ans_to_cash(closest_cats, not_send=False)
@@ -80,21 +84,8 @@ class CatsService(CatsServiceBase):
             embs.append(emb.tolist())
         return embs
 
-
-    # TODO
-    def emb_in_cach(self, img_hash_name):
-        return False
-
-    # TODO check answers in cash
-    def check_answer(self, person):
-        return False
-
-    # TODO save answers in cash
-    def __ans_to_cash(self, people_closest_cats, not_send=False):
-        pass
-
     def add_user(self, person: Person):
-        answer = self.check_answer(person)
+        answer = self.cash.check_answer(person)
         if answer:
             person.embeddings = answer.embeddings
         else:

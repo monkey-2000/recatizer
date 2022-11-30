@@ -11,3 +11,4 @@ class Entity(abc.ABC):
     paths: str
     quadkey: str
     embeddings: Optional[List[float]]
+    name: str
