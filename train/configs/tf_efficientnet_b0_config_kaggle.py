@@ -1,7 +1,7 @@
 from train.configs.base_config import *
 tf_efficientnet_b0_kaggle = Config(
     name="tf_efficientnet_b0_kaggle",
-    image_size=(512,512),
+    image_size=(256,256),
     optimizer=OptimizerParams(epochs=100, lr=3e-4, wd=5e-4, eps=1e-8, type="Adam", schedule=LearningSchedule(type="exponential", params={"gamma": 0.98})),
     task_config=TaskConfig(model_name="tf_efficientnet_b0"),
     save_folder="/kaggle/working",
