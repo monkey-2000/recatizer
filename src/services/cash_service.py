@@ -1,4 +1,5 @@
 import time
+from bson.objectid import ObjectId
 
 
 class CatsCash():
@@ -11,67 +12,55 @@ class CatsCash():
             # {'queiries': {}, # queiry_id queiries (photo_cag ) and answer (cat_id), chat_id
             #          'answers': {}} # id_person answer answer time
 
-    def delete_sent_cats(self, answer):
+    def check_answer(self, person):
+        # Was there already such an answer?
+        return False
+
+    def delete_sent_cats(self, person_id, cats):
         # TODO write this logic
         # delete sent_cats, Then add cats from ans
-        #
-        return answer
+        sending_cats = []
+        for i, cat in enumerate(cats):
+            if str(cat._id) not in self.sent_answers[person_id]['cats']:
+                sending_cats.append(cat)
+        return sending_cats
 
     def make_cats_id_set(self, cats):
         return set(
-                [id(cat) for cat in cats]
+                [str(cat._id) for cat in cats]
             )
+    def update_sent_answers(self, person_id, cats: list):
+        self.sent_answers[person_id]['cats'].update(self.make_cats_id_set(cats))
+        self.sent_answers[person_id]['last_ans_time'] = time.time()
+
+
+    def update_dont_sent_answers(self, person_id, cats: list):
+        self.dont_sent_answers[person_id]['cats'].extend(cats)
+        self.dont_sent_answers[person_id]['last_ans_time'] = time.time()
 
     def answer_editor(self, answer):
         # do not send too often;
         # do not send the same;
         # save ans
-        person_id = id(answer.person)
 
+        person_id = str(answer.person._id)
         if person_id not in self.sent_answers:
-            self.sent_answers[person_id]['cats'] = self.make_cats_id_set(
-                answer.cats)
-            self.sent_answers[person_id]['last_ans_time'] = time.time()
-
+            self.sent_answers[person_id] = {}
+            self.sent_answers[person_id]['cats'] = set()
+            self.update_sent_answers(person_id, answer.cats)
             return answer
 
-        #if self.answers[id(answer)]['last_ans_time'] -  what_time_now < self.answer_time_dely:
-         #   r
-
-        answer = self.delete_sent_cats(answer)
-        dt = time.time() - self.answers[id(answer)]['last_ans_time']
-        if answer:
+        dt = time.time() - self.sent_answers[person_id]['last_ans_time']
+        answer.cats = self.delete_sent_cats(person_id, answer.cats)
+        if len(answer.cats) > 0:
             if dt > self.answer_time_dely:
-                 self.answers[id(answer)]['last_ans_time'] = time.time()
+                self.update_sent_answers(person_id, answer.cats)
 
             else:
-                self.dont_sent_answers[id(answer)] = self.make_cats_id_set(
-                            answer.cats) # make cats set(answer.cats)
-                return False
-
-        if person_id in self.dont_sent_answers:
-            pass
-            ## TODO добавить логику добавления неотправленных
+                if person_id not in self.dont_sent_answers:
+                    self.dont_sent_answers[person_id] = {}
+                    self.dont_sent_answers[person_id]['cats'] = []
+                self.update_dont_sent_answers(person_id, answer.cats)
+                answer.cats = []
 
         return answer
-
-
-
-
-        # closest_cats_edited = closest_cats.copy()
-        # return closest_cats_edited
-
-    # TODO save answers in cash
-    def __answers_to_cash(self, closest_cats):
-
-        pass
-
-    # TODO check answers in cash
-    def check_answer(self, person):
-        # Was there already such an answer?
-        return False
-
-    # # TODO
-    # def emb_in_cach(self, img_hash_name):
-    #     return False
-

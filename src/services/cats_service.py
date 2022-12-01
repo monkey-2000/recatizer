@@ -59,7 +59,8 @@ class CatsService(CatsServiceBase):
 
         for cl in closest_cats:
             cl = self.cash.answer_editor(cl)
-            self.bot_loader.upload(cl)
+            if len(cl.cats) > 0:
+                self.bot_loader.upload(cl)
             # TODO add cash for answers
 
             # if (cl.person.last_ans - what_time_now) > self.ansver_time_dely:
