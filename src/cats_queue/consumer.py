@@ -1,5 +1,6 @@
 import logging
 import sys
+from time import time
 
 from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
@@ -58,6 +59,7 @@ class MsgConsumer:
                     quadkey=message["quadkey"],
                     embeddings=None,
                     chat_id=message["user_id"],
+                    dt=None
                 )
             )
         elif topic == self.SAW_CAT_TOPIC:
@@ -68,6 +70,7 @@ class MsgConsumer:
                     quadkey=message["quadkey"],
                     embeddings=None,
                     additional_info=message["additional_info"],
+                    dt=time()
                 )
             )
 

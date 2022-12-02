@@ -11,7 +11,7 @@ project_dir = os.environ.get("PROJECT_DIR")
 
 tf_efficientnet_b0_config = Config(
     name="tf_efficientnet_b0",
-    image_size=(256, 256),
+    image_size=(256 * 2, 256* 2),
     optimizer=OptimizerParams(
         epochs=100,
         lr=3e-4,
@@ -24,7 +24,7 @@ tf_efficientnet_b0_config = Config(
     # save_folder="/Users/alinatamkevich/dev/models",
     save_folder=project_dir + "models",
     dataset_config=DatasetConfig(
-        batch_size=16,
+        batch_size=1,
         base_path=database_path,
         train_path=project_dir + "/data/processed/train.csv",
         val_path=project_dir + "/data/processed/val.csv",

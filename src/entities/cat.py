@@ -26,6 +26,7 @@ class Cat(Entity):
             quadkey=bson["quadkey"],
             embeddings=bson["embeddings"],
             additional_info=bson["additional_info"],
+            dt=bson["dt"]
         )
 
 

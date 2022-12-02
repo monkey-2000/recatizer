@@ -1,4 +1,5 @@
 import logging
+from time import time
 from typing import List
 
 
@@ -44,30 +45,28 @@ class CatsService(CatsServiceBase):
     def __find_similar_cats(self, people: List[Person]):
         qudkeys = list({person.quadkey for person in people})
 
+
         query = {"quadkey": {"$in": qudkeys}}
-        # TODO fix case with none
+            # TODO fix case with none
       #  if None in qudkeys:
         if'no_quad' in qudkeys:
             query = {}
+
+        if people.dt != None:
+            query['dt'] = {'$gte': people.dt}
+        people.dt = time()
 
         cats = self.cats_db.find(query)
 
         if not cats:
             return
         closest_cats = self.matcher.find_n_closest(people, cats)
-        # TODO write metod which delete cats that have already been sent
 
         for cl in closest_cats:
-            cl = self.cash.answer_editor(cl)
+          #  cl = self.cash.answer_editor(cl)
             if len(cl.cats) > 0:
                 self.bot_loader.upload(cl)
-            # TODO add cash for answers
 
-            # if (cl.person.last_ans - what_time_now) > self.ansver_time_dely:
-            #     self.bot_loader.upload(cl)
-            #     # self.__ans_to_cash(closest_cats, not_send=False)
-            # else:
-            #     self.__ans_to_cash(closest_cats, not_send=True)
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({"quadkey": quadkey})
