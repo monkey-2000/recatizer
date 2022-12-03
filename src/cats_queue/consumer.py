@@ -59,7 +59,7 @@ class MsgConsumer:
                     quadkey=message["quadkey"],
                     embeddings=None,
                     chat_id=message["user_id"],
-                    dt=None
+                    dt=-float('inf')
                 )
             )
         elif topic == self.SAW_CAT_TOPIC:

@@ -60,3 +60,10 @@ class PeopleMongoClient(MongoClientBase):
         people = list(cursor)
         people = [Person.from_bson(p) for p in people]
         return people
+
+    def update(self, person: Person):
+        query = {'_id': person._id}
+        updated_person = {"$set": person.as_json_wo_none()}
+        ans = self.people_collection.update_one(query, updated_person)
+        if not ans.acknowledged:
+            return None

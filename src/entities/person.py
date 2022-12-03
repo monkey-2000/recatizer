@@ -23,4 +23,5 @@ class Person(Entity):
             quadkey=bson["quadkey"],
             embeddings=bson["embeddings"],
             chat_id=bson["chat_id"],
+            dt=bson["dt"]
         )

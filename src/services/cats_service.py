@@ -30,7 +30,7 @@ class CatsService(CatsServiceBase):
             config.bot_token, config.s3_client_config
         )
        # self.ansver_time_dely = config.answer_time_dely
-        self.cash = CatsCash(config.answer_time_dely)
+      #  self.cash = CatsCash(config.answer_time_dely)
 
     def save_new_cat(self, cat: Cat) -> bool:
         cat.embeddings = self.get_embs(cat.paths)
@@ -42,20 +42,21 @@ class CatsService(CatsServiceBase):
         self.__recheck_cats_in_search(cat.quadkey)
         return True
 
-    def __find_similar_cats(self, people: List[Person]):
+
+    def __get_query(self, people):
         qudkeys = list({person.quadkey for person in people})
-
-
         query = {"quadkey": {"$in": qudkeys}}
-            # TODO fix case with none
-      #  if None in qudkeys:
-        if'no_quad' in qudkeys:
+        if 'no_quad' in qudkeys:
             query = {}
+        last_aswer_time = list({person.dt for person in people})
+        query['dt'] = {'$gte':  min(last_aswer_time)}
+        return query
 
-        if people.dt != None:
-            query['dt'] = {'$gte': people.dt}
-        people.dt = time()
 
+
+    def __find_similar_cats(self, people: List[Person]):
+        # TODO fix case with none
+        query = self.__get_query(people)
         cats = self.cats_db.find(query)
 
         if not cats:
@@ -65,11 +66,15 @@ class CatsService(CatsServiceBase):
         for cl in closest_cats:
           #  cl = self.cash.answer_editor(cl)
             if len(cl.cats) > 0:
+                cl.person.dt = time()
+                self.people_db.update(cl.person)
                 self.bot_loader.upload(cl)
 
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({"quadkey": quadkey})
+        if len(people) == 0:
+            return
         self.__find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
@@ -85,11 +90,12 @@ class CatsService(CatsServiceBase):
         return embs
 
     def add_user(self, person: Person):
-        answer = self.cash.check_answer(person)
-        if answer:
-            person.embeddings = answer.embeddings
-        else:
-            person.embeddings = self.get_embs(person.paths)
+        #TODO load ans from cache
+        # answer = self.cash.check_answer(person)
+        # if answer:
+        #     person.embeddings = answer.embeddings
+        # else:
+        person.embeddings = self.get_embs(person.paths)
 
         person = self.people_db.save(person)
         self.__find_similar_cats([person])

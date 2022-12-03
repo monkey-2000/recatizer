@@ -80,7 +80,8 @@ class CatsMatcher:
     ):
         closest_cats = []
         for i, entity in tqdm(enumerate(for_check)):
-            closest = self.__get_by_idx(stored_cats, list(I[i]))
+            dont_sent_cats = [cat for cat in stored_cats if cat.dt >= entity.dt]
+            closest = self.__get_by_idx(dont_sent_cats, list(I[i]))  # TODO dt filter
             distances = list(D[i])[: len(closest)]
             closest_cats.append(ClosestCats(entity, closest, distances))
         return closest_cats
