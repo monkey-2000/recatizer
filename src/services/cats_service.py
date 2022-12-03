@@ -30,8 +30,8 @@ class CatsService(CatsServiceBase):
         self.bot_loader = DataUploader(
             config.bot_token, config.s3_client_config
         )
-        self.ansver_time_dely = config.answer_time_dely
-      #  self.cash = CatsCash(config.answer_time_dely)
+        self.answer_time_delay = config.answer_time_delay
+      #  self.cash = CatsCash(config.answer_time_delay)
 
     def save_new_cat(self, cat: Cat) -> bool:
         cat.embeddings = self.get_embs(cat.paths)
@@ -40,24 +40,34 @@ class CatsService(CatsServiceBase):
             logging.error("Cat wasn't saved!!!")
 
         # TODO start checking all people who searching their cats min(5 min, 5 new cats)
-        self.__recheck_cats_in_search(cat.quadkey)
+        self.recheck_cats_in_search(cat.quadkey)
         return True
 
-
-    def __get_query(self, people):
-        qudkeys = list({person.quadkey for person in people})
+    def __get_query(self, qudkeys: list, t_last_aswers=[-float('inf')]):
         query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
         if 'no_quad' in qudkeys:
             query = {}
-        last_aswer_time = list({person.dt for person in people})
-        query['dt'] = {'$gte':  min(last_aswer_time)}
+        query['dt'] = {'$gte': min(t_last_aswers)}
         return query
+
+
+    # def __get_query(self, people):
+    #     qudkeys = list({person.quadkey for person in people})
+    #     query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
+    #     if 'no_quad' in qudkeys:
+    #         query = {}
+    #     last_aswer_time = list({person.dt for person in people})
+    #     query['dt'] = {'$gte':  min(last_aswer_time)}
+    #     return query
 
 
 
     def __find_similar_cats(self, people: List[Person]):
         # TODO fix case with none
-        query = self.__get_query(people)
+        qudkeys = list({person.quadkey for person in people})
+        last_aswer_time = list({person.dt for person in people})
+        query = self.__get_query(qudkeys, last_aswer_time)
+
         cats = self.cats_db.find(query)
 
         if not cats:
@@ -72,10 +82,10 @@ class CatsService(CatsServiceBase):
 
 
 
-    def __recheck_cats_in_search(self, quadkey: str):
-       # people = self.people_db.find({"quadkey": quadkey})
-        people = self.people_db.find({"quadkey": {"$in": [quadkey, "no_quad"]},
-                                      "dt": {"$lte": time() -  self.ansver_time_dely}})
+    def recheck_cats_in_search(self, quadkey: str):
+        quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
+        people = self.people_db.find({"quadkey": {"$in": quadkey_query},
+                                      "dt": {"$lte": time() -  self.answer_time_delay}})
         if len(people) == 0:
             return
         self.__find_similar_cats(people)

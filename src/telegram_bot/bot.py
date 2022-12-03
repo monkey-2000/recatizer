@@ -106,8 +106,6 @@ async def save_album_to_s3(
             s3_paths.append(s3_path)
 
     await state.set_state(RStates.ask_extra_info)
-    # await state.update_data(s3_paths=s3_paths,
-    #                         cat_name=cat_name)
     await  update_data(state, s3_paths, cat_name, None, message.from_user.id)
 
     await message.answer("Please write some extra info about this cat")
@@ -118,12 +116,6 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
     await  update_data(state, [s3_path], cat_name, None, message.from_user.id)
-    # await state.update_data(
-    #     s3_paths=[s3_path],
-    #     cat_name=cat_name,
-    #     person_name=None,
-    #     user_id=message.from_user.id,
-    # )
     await message.answer("Please write some extra info about this cat")
 
 
@@ -163,7 +155,7 @@ async def handle_location(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
 async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
-    #cat_data["quadkey"] = None
+    #cat_data["quadkey"] = None # TODO fix it
     cat_data["quadkey"] = 'no_quad'
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
