@@ -81,6 +81,14 @@ def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
     return mercantile.quadkey(tile)
 
 
+async def update_data(state, paths: list, cat_name, person_name, user_id):
+    await state.update_data(
+        s3_paths=paths,
+        cat_name=cat_name,
+        person_name=person_name,
+        user_id=user_id
+    )
+
 @dp.message_handler(
     is_media_group=True,
     content_types=types.ContentType.ANY,
@@ -98,7 +106,10 @@ async def save_album_to_s3(
             s3_paths.append(s3_path)
 
     await state.set_state(RStates.ask_extra_info)
-    await state.update_data(s3_paths=s3_paths, cat_name=cat_name)
+    # await state.update_data(s3_paths=s3_paths,
+    #                         cat_name=cat_name)
+    await  update_data(state, s3_paths, cat_name, None, message.from_user.id)
+
     await message.answer("Please write some extra info about this cat")
 
 
@@ -106,12 +117,13 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    await state.update_data(
-        s3_paths=[s3_path],
-        cat_name=cat_name,
-        person_name=None,
-        user_id=message.from_user.id,
-    )
+    await  update_data(state, [s3_path], cat_name, None, message.from_user.id)
+    # await state.update_data(
+    #     s3_paths=[s3_path],
+    #     cat_name=cat_name,
+    #     person_name=None,
+    #     user_id=message.from_user.id,
+    # )
     await message.answer("Please write some extra info about this cat")
 
 

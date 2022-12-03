@@ -5,7 +5,8 @@ from typing import List
 
 from pymongo import MongoClient
 
-from src.services.cash_service import CatsCash
+
+
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
@@ -29,7 +30,7 @@ class CatsService(CatsServiceBase):
         self.bot_loader = DataUploader(
             config.bot_token, config.s3_client_config
         )
-       # self.ansver_time_dely = config.answer_time_dely
+        self.ansver_time_dely = config.answer_time_dely
       #  self.cash = CatsCash(config.answer_time_dely)
 
     def save_new_cat(self, cat: Cat) -> bool:
@@ -45,7 +46,7 @@ class CatsService(CatsServiceBase):
 
     def __get_query(self, people):
         qudkeys = list({person.quadkey for person in people})
-        query = {"quadkey": {"$in": qudkeys}}
+        query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
         if 'no_quad' in qudkeys:
             query = {}
         last_aswer_time = list({person.dt for person in people})
@@ -64,15 +65,17 @@ class CatsService(CatsServiceBase):
         closest_cats = self.matcher.find_n_closest(people, cats)
 
         for cl in closest_cats:
-          #  cl = self.cash.answer_editor(cl)
             if len(cl.cats) > 0:
                 cl.person.dt = time()
                 self.people_db.update(cl.person)
                 self.bot_loader.upload(cl)
 
 
+
     def __recheck_cats_in_search(self, quadkey: str):
-        people = self.people_db.find({"quadkey": quadkey})
+       # people = self.people_db.find({"quadkey": quadkey})
+        people = self.people_db.find({"quadkey": {"$in": [quadkey, "no_quad"]},
+                                      "dt": {"$lte": time() -  self.ansver_time_dely}})
         if len(people) == 0:
             return
         self.__find_similar_cats(people)

@@ -17,6 +17,7 @@ logger = logging.getLogger("chat_bot_logger")
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
 
+
 class LimitedMultiprocessingPool(mp_pool.Pool):
     def get_pool_cache_size(self):
         return len(self._cache)
@@ -89,6 +90,19 @@ class MsgConsumer:
 
                 self.execute(msg)
         self.consumer.close()
+
+    def run(self):
+        logger.setLevel("INFO")
+        fh = logging.StreamHandler(sys.stdout)
+        fh.setFormatter(logging.Formatter(_log_format))
+        fh.setLevel(level=logging.INFO)
+
+        logger.addHandler(fh)
+        logger.setLevel(level=logging.INFO)
+        logger.warning("Consumer start.")
+
+        consumer = MsgConsumer()
+        consumer.main_loop()
 
 
 if __name__ == "__main__":
