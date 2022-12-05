@@ -4,6 +4,7 @@ import uuid
 import mercantile
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
@@ -15,7 +16,7 @@ from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
-cats_cache = CatsCache(max_size=bot_config.cache_max_size)
+
 bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
@@ -41,11 +42,30 @@ async def start(message: types.Message, state: FSMContext):
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
+    buttons.append(types.KeyboardButton(text="Unsubscribe"))
     keyboard.add(*buttons)
     await message.answer(
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
         reply_markup=keyboard,
     )
+
+
+
+@dp.message_handler(Text(equals="Unsubscribe", ignore_case=True))
+async def unsubscribe(message: types.Message, state: FSMContext, cache: CatsCache):
+    await message.answer(
+        "Your cats:", reply_markup=types.ReplyKeyboardRemove()
+    )
+   # person_cats = cats_cache.find_person_cats(message.from_user.id)
+    person_cats = cache.find_person_cats(message.from_user.id)
+    await message.answer(
+        f"you send us {len(person_cats)}"
+    )
+    for cat in person_cats:
+
+        await message.answer(
+            " ----- \n name: {0}, \n task: {1},\n comment: {2}\n -----".format(*cat)
+        )
 
 
 @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
@@ -144,7 +164,9 @@ async def handle_location(message: types.Message, state: FSMContext):
     quadkey = point_to_quadkey(lon, lat)
     cat_data = await state.get_data()
     cat_data["quadkey"] = quadkey
-    cat_data["cat_id"] = cats_cache.add_cat(cat_data)
+    cat_data["cat_id"] = str(uuid.uuid4())
+    storage.update_data(cat_data)
+    # cat_data["cat_id"] = cats_cache.add_cat(cat_data)
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
@@ -163,6 +185,7 @@ async def handle_location(message: types.Message, state: FSMContext):
     #cat_data["quadkey"] = None # TODO fix it
     cat_data["quadkey"] = 'no_quad'
     is_sent = await send_msgs_to_model(cat_data)
+
     if not is_sent:
         await message.answer(
             reply="Sorry. Try again", reply_markup=types.ReplyKeyboardRemove()
@@ -177,7 +200,7 @@ async def handle_location(message: types.Message, state: FSMContext):
 def get_kafka_message(_cat_data):
     kafka_message = {
         "user_id": _cat_data["user_id"],
-        "cat_id": _cat_data["cat_id"],
+        "cat_name": _cat_data["cat_name"],
         "image_paths": _cat_data["s3_paths"],
         "additional_info": _cat_data["additional_info"],
         "quadkey": _cat_data["quadkey"],
