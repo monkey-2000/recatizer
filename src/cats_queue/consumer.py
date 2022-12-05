@@ -26,9 +26,11 @@ class LimitedMultiprocessingPool(mp_pool.Pool):
 class MsgConsumer:
     FIND_CAT_TOPIC = "find_cat"
     SAW_CAT_TOPIC = "saw_cat"
-
+    UNSUBSCRIBE = "unsubscribe"
+    GIVE_CATS = "give_cats"
     def __init__(self):
-        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
+        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC,
+                       self.UNSUBSCRIBE, self.GIVE_CATS]
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="latest",#"earlest",  # "latest",
@@ -74,6 +76,10 @@ class MsgConsumer:
                     dt=time()
                 )
             )
+        elif topic == self.UNSUBSCRIBE:
+            print(self.UNSUBSCRIBE)
+        elif topic == self.GIVE_CATS:
+            print(self.GIVE_CATS)
 
     def main_loop(self):
         while not self.stop_processing:

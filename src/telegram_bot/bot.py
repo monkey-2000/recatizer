@@ -33,7 +33,7 @@ class RStates(StatesGroup):
     geo = State()
     ask_extra_info = State()
     send_message = State()
-
+    unsubscribe = State()
 
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
@@ -42,7 +42,7 @@ async def start(message: types.Message, state: FSMContext):
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
-    buttons.append(types.KeyboardButton(text="Unsubscribe"))
+    buttons.append(types.KeyboardButton(text="ShowMyCatorders"))
     keyboard.add(*buttons)
     await message.answer(
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
@@ -50,22 +50,46 @@ async def start(message: types.Message, state: FSMContext):
     )
 
 
+@dp.message_handler(Text(equals="ShowMyCatorders", ignore_case=True))
+async def give_cats(message: types.Message, state: FSMContext):
+    kafka_producer.send(
+        value={"user_id": message.from_user.id},
+        key="give_cats",
+        topic="give_cats",
+    )
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    buttons = []
+    buttons.append(types.KeyboardButton(text="Unsubscribe"))
+    buttons.append(types.KeyboardButton(text="Start"))
+    keyboard.add(*buttons)
+    await message.answer(
+        "Please press the button 'Unsubscribe' ",
+        reply_markup=keyboard,
+    )
+
 
 @dp.message_handler(Text(equals="Unsubscribe", ignore_case=True))
-async def unsubscribe(message: types.Message, state: FSMContext, cache: CatsCache):
+async def choose_unsubscribe_cats(message: types.Message, state):
+    await state.set_state(RStates.unsubscribe)
     await message.answer(
-        "Your cats:", reply_markup=types.ReplyKeyboardRemove()
-    )
-   # person_cats = cats_cache.find_person_cats(message.from_user.id)
-    person_cats = cache.find_person_cats(message.from_user.id)
-    await message.answer(
-        f"you send us {len(person_cats)}"
-    )
-    for cat in person_cats:
+        "Please write num or nums of cats", reply_markup=types.ReplyKeyboardRemove())
 
-        await message.answer(
-            " ----- \n name: {0}, \n task: {1},\n comment: {2}\n -----".format(*cat)
+
+@dp.message_handler(state=RStates.unsubscribe, content_types=["text"])
+async def unsubscribe(message: types.Message, state):
+    try:
+        cats_num = list(map(int, message.text.split()))
+        kafka_producer.send(
+            value={"user_id": message.from_user.id,
+                   "cats": cats_num},
+            key="unsubscribe",
+            topic="unsubscribe",
         )
+    except ValueError:
+        await message.answer(
+            "NUMBERS!!")
+    await state.finish()
+
 
 
 @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))

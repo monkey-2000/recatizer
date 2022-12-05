@@ -34,3 +34,20 @@ class DataUploader:
                 media_group.append(InputMediaPhoto(media=cat_image_bytes))
             self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
             self.bot.send_message(closest.person.chat_id, cat.additional_info)
+
+
+# @dp.message_handler(Text(equals="Unsubscribe", ignore_case=True))
+# async def unsubscribe(message: types.Message, state: FSMContext, cache: CatsCache):
+#     await message.answer(
+#         "Your cats:", reply_markup=types.ReplyKeyboardRemove()
+#     )
+#    # person_cats = cats_cache.find_person_cats(message.from_user.id)
+#     person_cats = cache.find_person_cats(message.from_user.id)
+#     await message.answer(
+#         f"you send us {len(person_cats)}"
+#     )
+#     for cat in person_cats:
+#
+#         await message.answer(
+#             " ----- \n name: {0}, \n task: {1},\n comment: {2}\n -----".format(*cat)
+#         )
