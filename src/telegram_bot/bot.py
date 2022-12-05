@@ -8,12 +8,14 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
+from src.services.cats_cache import CatsCache
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
+cats_cache = CatsCache(max_size=bot_config.cache_max_size)
 bot = Bot(token=bot_config.token)
 storage = MemoryStorage()
 kafka_producer = Producer()
@@ -82,6 +84,9 @@ def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
 
 
 async def update_data(state, paths: list, cat_name, person_name, user_id):
+
+    if person_name == None:
+        person_name = 'BORIS BRITVA' ## TODO add name generator service
     await state.update_data(
         s3_paths=paths,
         cat_name=cat_name,
@@ -139,7 +144,7 @@ async def handle_location(message: types.Message, state: FSMContext):
     quadkey = point_to_quadkey(lon, lat)
     cat_data = await state.get_data()
     cat_data["quadkey"] = quadkey
-
+    cat_data["cat_id"] = cats_cache.add_cat(cat_data)
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
@@ -172,6 +177,7 @@ async def handle_location(message: types.Message, state: FSMContext):
 def get_kafka_message(_cat_data):
     kafka_message = {
         "user_id": _cat_data["user_id"],
+        "cat_id": _cat_data["cat_id"],
         "image_paths": _cat_data["s3_paths"],
         "additional_info": _cat_data["additional_info"],
         "quadkey": _cat_data["quadkey"],
