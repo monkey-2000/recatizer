@@ -9,10 +9,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from telegram import InputMediaPhoto
 
 from src.services.user_profile_service import UserProfileClient
-from src.telegram_bot.bot_tools import get_cats_in_profile_msg
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
@@ -79,11 +77,11 @@ async def profile(message: types.Message, state):
         "*Your cats in search:*",
         reply_markup=types.ReplyKeyboardRemove(),
     )
-    await send_msgs_with_cats(message, cats["saw_cats"])
+    await send_msgs_with_cats(message, cats["find_cats"])
     await message.answer(
         "*Cats you have seen:*"
     )
-    await send_msgs_with_cats(message, cats["find_cats"])
+    await send_msgs_with_cats(message, cats["saw_cats"])
 
 
     buttons = []
