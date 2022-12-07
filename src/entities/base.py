@@ -11,4 +11,6 @@ class Entity(abc.ABC):
     paths: str
     quadkey: str
     embeddings: Optional[List[float]]
+    additional_info: dict
     dt: float
+    chat_id: int

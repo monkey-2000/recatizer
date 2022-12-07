@@ -36,4 +36,4 @@ class TgBotConfig:
     image_dir: str
     kafka_server: list
     s3_client_config: S3ClientConfig
-    cache_max_size: int
+    mongoDB_url: str

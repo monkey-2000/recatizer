@@ -15,7 +15,7 @@ class AlbumMiddleware(BaseMiddleware):
     [https://github.com/WhiteMemory99/aiogram_album_handler/blob/master/example/album.py]"""
 
     album_data: dict = {}
-    cats_cache = CatsCache(max_size=bot_config.cache_max_size)
+    # cats_cache = CatsCache(max_size=bot_config.cache_max_size)
 
     def __init__(self, latency: Union[int, float] = 0.01):
         """
@@ -27,14 +27,14 @@ class AlbumMiddleware(BaseMiddleware):
 
     async def on_process_message(self, message: types.Message, data: dict):
         if not message.media_group_id and len(message.photo) == 0:
-            if data['state'].storage.data != {}:
-                cat = data['state'].storage.data[str(message.from_id)][str(message.from_id)]['data']
-                print(cat)
-                if self.cats_cache.is_completed_cat(cat):
-                    print('adding')
-                    self.cats_cache.add_cat(cat)
-
-            data["cache"] = self.cats_cache
+            # if data['state'].storage.data != {}:
+            #     cat = data['state'].storage.data[str(message.from_id)][str(message.from_id)]['data']
+            #     print(cat)
+            #     if self.cats_cache.is_completed_cat(cat):
+            #         print('adding')
+            #         self.cats_cache.add_cat(cat)
+            #
+            # data["cache"] = self.cats_cache
             return
 
 

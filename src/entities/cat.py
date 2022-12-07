@@ -8,8 +8,7 @@ from src.entities.person import Person
 
 @dataclass
 class Cat(Entity):
-    additional_info: Dict[str, Any]
-
+    person_name: str
     def as_json_wo_none(self):
 
         return {
@@ -26,6 +25,8 @@ class Cat(Entity):
             quadkey=bson["quadkey"],
             embeddings=bson["embeddings"],
             additional_info=bson["additional_info"],
+            chat_id=bson["chat_id"],
+            person_name=bson["person_name"],
             dt=bson["dt"]
         )
 

@@ -1,6 +1,7 @@
 import os
 import uuid
 
+import cv2
 import mercantile
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -8,8 +9,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from telegram import InputMediaPhoto
 
-from src.services.cats_cache import CatsCache
+from src.services.user_profile_service import UserProfileClient
+from src.telegram_bot.bot_tools import get_cats_in_profile_msg
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
@@ -17,9 +20,13 @@ from src.utils.s3_client import YandexS3Client
 
 
 
+
 bot = Bot(token=bot_config.token)
+
 storage = MemoryStorage()
 kafka_producer = Producer()
+user_profile = UserProfileClient(bot_config.mongoDB_url)
+
 dp = Dispatcher(bot, storage=storage)
 s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_access_key_id,
@@ -38,11 +45,11 @@ class RStates(StatesGroup):
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
-    buttons.append(types.KeyboardButton(text="ShowMyCatorders"))
+    buttons.append(types.KeyboardButton(text="My Profile"))
     keyboard.add(*buttons)
     await message.answer(
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
@@ -50,45 +57,44 @@ async def start(message: types.Message, state: FSMContext):
     )
 
 
-@dp.message_handler(Text(equals="ShowMyCatorders", ignore_case=True))
-async def give_cats(message: types.Message, state: FSMContext):
-    kafka_producer.send(
-        value={"user_id": message.from_user.id},
-        key="give_cats",
-        topic="give_cats",
+async def send_msgs_with_cats(message, cats):
+    for i, cat in enumerate(cats):
+        comment = '*{0}*: info: {1}, photo amount {2},\n one of the photos.'.format(i, cat.additional_info, len(cat.paths))
+
+        cat_image = s3_client.load_image(cat.paths[0])
+        n, m, _ = cat_image.shape
+
+        cat_image = cv2.resize(cat_image, (100, 100))
+        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+        cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
+
+        await message.reply_photo(
+                                photo=cat_image_bytes,
+                                caption=comment )
+
+@dp.message_handler(Text(equals="My Profile", ignore_case=True))
+async def profile(message: types.Message, state):
+    cats = user_profile.find_all_user_cats(message.from_user.id)
+    await message.answer(
+        "*Your cats in search:*",
+        reply_markup=types.ReplyKeyboardRemove(),
     )
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    await send_msgs_with_cats(message, cats["saw_cats"])
+    await message.answer(
+        "*Cats you have seen:*"
+    )
+    await send_msgs_with_cats(message, cats["find_cats"])
+
+
     buttons = []
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons.append(types.KeyboardButton(text="Menu"))
     buttons.append(types.KeyboardButton(text="Unsubscribe"))
-    buttons.append(types.KeyboardButton(text="Start"))
     keyboard.add(*buttons)
     await message.answer(
-        "Please press the button 'Unsubscribe' ",
-        reply_markup=keyboard,
+        "That is all", reply_markup=keyboard
     )
-
-
-@dp.message_handler(Text(equals="Unsubscribe", ignore_case=True))
-async def choose_unsubscribe_cats(message: types.Message, state):
-    await state.set_state(RStates.unsubscribe)
-    await message.answer(
-        "Please write num or nums of cats", reply_markup=types.ReplyKeyboardRemove())
-
-
-@dp.message_handler(state=RStates.unsubscribe, content_types=["text"])
-async def unsubscribe(message: types.Message, state):
-    try:
-        cats_num = list(map(int, message.text.split()))
-        kafka_producer.send(
-            value={"user_id": message.from_user.id,
-                   "cats": cats_num},
-            key="unsubscribe",
-            topic="unsubscribe",
-        )
-    except ValueError:
-        await message.answer(
-            "NUMBERS!!")
-    await state.finish()
+  #  await state.finish()
 
 
 
