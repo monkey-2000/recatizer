@@ -55,6 +55,23 @@ async def start(message: types.Message, state: FSMContext):
         reply_markup=keyboard,
     )
 
+# TODO отписка ото всех
+@dp.message_handler(Text(equals="Unsubscribe all", ignore_case=True))
+async def unsubscribe_all(message: types.Message, state: FSMContext):
+    cats_data = await state.get_data()
+    cats = []
+    cats.extend(cats_data["cats"]["saw_cats"])
+    cats.extend(cats_data["cats"]["find_cats"])
+
+    for cat in  cats:
+        user_profile.set_subscription_status(cat._id, set_status=False)
+    await message.answer(text='You unsubsscribed from all cats')
+
+
+@dp.message_handler(Text(equals="Menu", ignore_case=True))
+async def return_to_menu(message: types.Message, state: FSMContext):
+    pass
+
 
 async def send_msgs_with_cats(message, cats):
     for i, cat in enumerate(cats):
@@ -77,11 +94,14 @@ async def send_msgs_with_cats(message, cats):
                                 reply_markup=get_keyboard_fab(cat._id),
                                 parse_mode="HTML")
 
-# TODO отписка ото всех
+
 
 @dp.message_handler(Text(equals="My Profile", ignore_case=True))
 async def profile(message: types.Message, state):
     cats = user_profile.find_all_user_cats(message.from_user.id)
+    cats_data = await state.get_data()
+    cats_data['cats'] = cats
+    await state.update_data(cats_data)
 
     # TODO make fun
     if len(cats["find_cats"]) > 0:
@@ -116,7 +136,7 @@ async def profile(message: types.Message, state):
     buttons = []
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons.append(types.KeyboardButton(text="Menu"))
-    buttons.append(types.KeyboardButton(text="Unsubscribe"))
+    buttons.append(types.KeyboardButton(text="Unsubscribe all"))
     keyboard.add(*buttons)
     await message.answer(
         "That is all", reply_markup=keyboard
@@ -168,8 +188,6 @@ async def lost_cat(message: types.Message, state: FSMContext):
 
     await state.set_state(RStates.find)
     await state.update_data(kafka_topic="find_cat")
-
-#TODO ask name and e-mail
 
 @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
 async def saw_cat(message: types.Message, state: FSMContext):
