@@ -60,7 +60,9 @@ async def send_msgs_with_cats(message, cats):
     for i, cat in enumerate(cats):
         sent_date = datetime.fromtimestamp(cat.dt)
         # TODO make good  format
-        comment = '<b> you sent the cat at\n  {0} </b>  \n You wrote an info about: {1}'.format(sent_date, cat.additional_info)
+        comment = "<b> Cat id {2}</b>\n"\
+                  "Sending time{0}\n" \
+                  "You wrote an info about: {1}".format(sent_date, cat.additional_info, cat._id)
 
         cat_image = s3_client.load_image(cat.paths[0])
         n, m, _ = cat_image.shape
