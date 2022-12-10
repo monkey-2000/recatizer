@@ -40,13 +40,19 @@ class CatsMongoClient(MongoClientBase):
             return None
         return cat
 
+    def update(self, cat: Cat):
+       query = {'_id': cat._id}
+       updated_person = {"$set": cat.as_json_wo_none()}
+       ans = self.cats_collection.update_one(query, updated_person)
+       if not ans.acknowledged:
+           return None
 
 class PeopleMongoClient(MongoClientBase):
     def __init__(self, db):
         self.people_collection = db.people
 
     def delete(self, query: dict):
-        self.people_collection.delete_one(dict)
+        self.people_collection.delete_one(query)
 
     def save(self, person: Person) -> Optional[Person]:
         ans = self.people_collection.insert_one(person.as_json_wo_none())

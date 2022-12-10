@@ -59,6 +59,7 @@ class MsgConsumer:
                     paths=message["image_paths"],
                     quadkey=message["quadkey"],
                     embeddings=None,
+                    is_active=True,
                     additional_info=message["additional_info"],
                     chat_id=message["user_id"],
                     dt=-float('inf')
@@ -71,6 +72,7 @@ class MsgConsumer:
                     paths=message["image_paths"],
                     quadkey=message["quadkey"],
                     embeddings=None,
+                    is_active=True,
                     additional_info=message["additional_info"],
                     chat_id=message["user_id"],
                     person_name=message["person_name"],

@@ -44,6 +44,7 @@ class CatsService(CatsServiceBase):
         return True
 
     def __get_query(self, qudkeys: list, t_last_aswers=[-float('inf')]):
+        # TODO dont send saw cats and find man with same chat id
         query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
         if 'no_quad' in qudkeys:
             query = {}
@@ -103,7 +104,7 @@ class CatsService(CatsServiceBase):
         return embs
 
     def add_user(self, person: Person):
-        #TODO load ans from cache
+        # TODO load ans from cache
         # answer = self.cash.check_answer(person)
         # if answer:
         #     person.embeddings = answer.embeddings

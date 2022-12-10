@@ -21,6 +21,7 @@ class Person(Entity):
             paths=bson["paths"],
             quadkey=bson["quadkey"],
             embeddings=bson["embeddings"],
+            is_active=bson["is_active"],
             additional_info=bson["additional_info"],
             chat_id=bson["chat_id"],
             dt=bson["dt"]

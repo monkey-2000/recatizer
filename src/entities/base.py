@@ -11,6 +11,7 @@ class Entity(abc.ABC):
     paths: str
     quadkey: str
     embeddings: Optional[List[float]]
+    is_active: True #Unsubscribed or not
     additional_info: dict
     dt: float
     chat_id: int

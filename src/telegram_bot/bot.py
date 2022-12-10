@@ -1,6 +1,7 @@
 import os
 import uuid
 from contextlib import suppress
+from datetime import datetime
 
 import cv2
 import mercantile
@@ -20,8 +21,6 @@ from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
-
-
 bot = Bot(token=bot_config.token)
 
 storage = MemoryStorage()
@@ -33,15 +32,14 @@ s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_access_key_id,
     bot_config.s3_client_config.aws_secret_access_key,
 )
-
+UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
 
 class RStates(StatesGroup):
     saw = State()
     find = State()
     geo = State()
     ask_extra_info = State()
-    send_message = State()
-    unsubscribe = State()
+
 
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
@@ -60,8 +58,9 @@ async def start(message: types.Message, state: FSMContext):
 
 async def send_msgs_with_cats(message, cats):
     for i, cat in enumerate(cats):
-        # TODO filter deleted
-        comment = '<b> {0} from {1} your cats </b>.  \n You wrote an info about: {2}'.format(i + 1, len(cats), cat.additional_info)
+        sent_date = datetime.fromtimestamp(cat.dt)
+        # TODO make good  format
+        comment = '<b> you sent the cat at\n  {0} </b>  \n You wrote an info about: {1}'.format(sent_date, cat.additional_info)
 
         cat_image = s3_client.load_image(cat.paths[0])
         n, m, _ = cat_image.shape
@@ -76,29 +75,41 @@ async def send_msgs_with_cats(message, cats):
                                 reply_markup=get_keyboard_fab(cat._id),
                                 parse_mode="HTML")
 
+# TODO отписка ото всех
+
 @dp.message_handler(Text(equals="My Profile", ignore_case=True))
 async def profile(message: types.Message, state):
     cats = user_profile.find_all_user_cats(message.from_user.id)
 
     # TODO make fun
-    if len(cats["find_cats"]) == 1:
-        msg = "<b>You found {0} cat. There is:</b>".format(len(cats["saw_cats"]))
+    if len(cats["find_cats"]) > 0:
+        if len(cats["find_cats"]) == 1:
+            msg = "<b>You found {0} cat. There is:</b>".format(len(cats["find_cats"]))
+        else:
+            msg = "<b>You found  {0} cats. There are:</b>".format(len(cats["find_cats"]))
+
+        await message.answer(msg, parse_mode="HTML")
+
+        await send_msgs_with_cats(message, cats["find_cats"])
     else:
-        msg = "<b>You found  {0} cats. There are:</b>".format(len(cats["saw_cats"]))
+        await message.answer(
+            "You haven't uploaded the cats you found yet", reply_markup=types.ReplyKeyboardRemove()
+        )
 
-    await message.answer(msg, parse_mode="HTML")
 
-    await send_msgs_with_cats(message, cats["find_cats"])
+    if len(cats["saw_cats"]) > 0:
+        if len(cats["saw_cats"]) == 1:
+            msg = "<b>You saw {0} cat. There is:</b>".format(len(cats["saw_cats"]))
+        else:
+            msg = "<b>You saw  {0} cats. There are:</b>".format(len(cats["saw_cats"]))
 
-    if len(cats["saw_cats"]) == 1:
-        msg = "<b>You saw {0} cat. There is:</b>".format(len(cats["saw_cats"]))
+        await message.answer(msg,parse_mode="HTML")
+
+        await send_msgs_with_cats(message, cats["saw_cats"])
+
     else:
-        msg = "<b>You saw  {0} cats. There are:</b>".format(len(cats["saw_cats"]))
-
-    await message.answer(msg,parse_mode="HTML")
-
-    await send_msgs_with_cats(message, cats["saw_cats"])
-
+        await message.answer(
+            "You haven't lost your cat yet!", reply_markup=types.ReplyKeyboardRemove())
 
     buttons = []
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -108,15 +119,7 @@ async def profile(message: types.Message, state):
     await message.answer(
         "That is all", reply_markup=keyboard
     )
-  #  await state.finish()
-###################################################
-# cb= CallbackData("cat_id", "action")
-# class UnsubscribeCallback(CallbackData, prefix="my"):
-# class UnsubscribeCb(CallbackData):
-#     action: str
-#     cat_id: int
 
-UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
 
 def get_keyboard_fab(cat_id, action="unsubsscribe"):
 
@@ -141,15 +144,20 @@ async def update_num_text_fab(message: types.Message, action: str, cat_id: str):
 @dp.callback_query_handler(UnsubscribeCb.filter(action=["unsubsscribe"]))
 async def callbacks(call: types.CallbackQuery, callback_data: dict):
     cat_id = callback_data["cat_id"]
+    user_profile.set_subscription_status(cat_id , set_status=False)
+
     await update_num_text_fab(call.message, action="subsscribe", cat_id=cat_id)
-    await call.answer(text='You Unsubsscribed')
+    await call.answer(text='You unsubsscribed')
 
 @dp.callback_query_handler(UnsubscribeCb.filter(action=["subsscribe"]))
 async def callbacks(call: types.CallbackQuery, callback_data: dict):
     cat_id = callback_data["cat_id"]
+    user_profile.set_subscription_status(cat_id, set_status=True)
+
     await update_num_text_fab(call.message, action="unsubsscribe", cat_id=cat_id)
-    await call.answer(text='You Subsscribed')
-###########################################################################
+    await call.answer(text='You subsscribed')
+
+
 @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
 async def lost_cat(message: types.Message, state: FSMContext):
     await message.answer(
@@ -159,13 +167,13 @@ async def lost_cat(message: types.Message, state: FSMContext):
     await state.set_state(RStates.find)
     await state.update_data(kafka_topic="find_cat")
 
+#TODO ask name and e-mail
 
 @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
 async def saw_cat(message: types.Message, state: FSMContext):
     await message.answer(
         "Please upload photo of cat", reply_markup=types.ReplyKeyboardRemove()
     )
-
     await state.set_state(RStates.saw)
     await state.update_data(kafka_topic="saw_cat")
 
@@ -222,7 +230,9 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    await  update_data(state, [s3_path], cat_name, None, message.from_user.id)
+    person_name = '{0} ({1})'.format(message.from_user.first_name,
+                                     message.from_user.username)
+    await  update_data(state, [s3_path], cat_name, person_name, message.from_user.id)
     await message.answer("Please write some extra info about this cat")
 
 
@@ -248,7 +258,6 @@ async def handle_location(message: types.Message, state: FSMContext):
     cat_data["quadkey"] = quadkey
     cat_data["cat_id"] = str(uuid.uuid4())
     storage.update_data(cat_data)
-    # cat_data["cat_id"] = cats_cache.add_cat(cat_data)
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(

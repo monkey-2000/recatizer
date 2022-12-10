@@ -24,6 +24,7 @@ class Cat(Entity):
             paths=bson["paths"],
             quadkey=bson["quadkey"],
             embeddings=bson["embeddings"],
+            is_active=bson["is_active"],
             additional_info=bson["additional_info"],
             chat_id=bson["chat_id"],
             person_name=bson["person_name"],
