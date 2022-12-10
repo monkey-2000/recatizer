@@ -71,6 +71,7 @@ async def unsubscribe_all(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="Menu", ignore_case=True))
 async def return_to_menu(message: types.Message, state: FSMContext):
     pass
+    # TODO make menu
 
 
 async def send_msgs_with_cats(message, cats):
