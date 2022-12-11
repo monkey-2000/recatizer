@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
-from src.entities.cat import Cat
+from src.entities.cat import Cat, ClosestCats
 from src.entities.person import Person
 from src.services.matcher import CatsMatcher, Predictor
 from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
@@ -31,6 +31,7 @@ class CatsService(CatsServiceBase):
             config.bot_token, config.s3_client_config
         )
         self.answer_time_delay = config.answer_time_delay
+        self.cats_in_answer = config.cats_in_answer
       #  self.cash = CatsCash(config.answer_time_delay)
 
     def save_new_cat(self, cat: Cat) -> bool:
@@ -40,6 +41,7 @@ class CatsService(CatsServiceBase):
             logging.error("Cat wasn't saved!!!")
 
         # TODO start checking all people who searching their cats min(5 min, 5 new cats)
+        # it s completed but not apropriate
         self.recheck_cats_in_search(cat.quadkey)
         return True
 
@@ -73,16 +75,21 @@ class CatsService(CatsServiceBase):
 
         if not cats:
             return
-        closest_cats = self.matcher.find_n_closest(people, cats)
+        closest_cats = self.matcher.find_n_closest(people, cats,max_n=self.cats_in_answer)
+
 
         for cl in closest_cats:
+            # TODO make table with answers. people id - sending cats.
+            # Than filter by sending cats id
+            cl = self.throw_sent_cats(cl)
             if len(cl.cats) > 0:
                 cl.person.dt = time()
                 self.people_db.update(cl.person)
                 self.bot_loader.upload(cl)
 
-
-
+    def throw_sent_cats(self, closest_cats: ClosestCats):
+        # TODO make table with answers. people id - sending cats.
+        pass
     def recheck_cats_in_search(self, quadkey: str):
         quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
         people = self.people_db.find({"quadkey": {"$in": quadkey_query},

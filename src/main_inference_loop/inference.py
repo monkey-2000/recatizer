@@ -28,7 +28,7 @@ if __name__ == "__main__":
             tl.stop()
             break
 
-
+#TODO divide it from consumer
 
 # class InferenceLoop():
 #     tl = Timeloop()

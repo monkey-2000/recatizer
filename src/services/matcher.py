@@ -125,6 +125,7 @@ class CatsMatcher:
         max_n: int = 5,
         thr: float = 1,
     ):
+        #TODO the to config
         emb_for_check, _ = self._get_embeddings(for_check)
         stored_emb, stored_emb_belonging = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(

@@ -19,6 +19,7 @@ class ServiceConfig:
     local_models_path: str
     answer_time_delay: int
     ans_check_frequency: int
+    cats_in_answer: 5
 
 
 default_service_config = ServiceConfig(
@@ -32,5 +33,6 @@ default_service_config = ServiceConfig(
     models_path=os.environ.get("MODEL_PATH"),
     local_models_path=os.environ.get("LOCAL_MODEL_PATH"),
     answer_time_delay=120,  ## dely time for bot loader (one cat  in 5 sec)
-    ans_check_frequency=10 ## how often do we check for answers in main _nference_loop
+    ans_check_frequency=10, ## how often do we check for answers in main _nference_loop
+    cats_in_answer=5
 )
