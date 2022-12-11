@@ -72,24 +72,24 @@ class CatsService(CatsServiceBase):
         query = self.__get_query(qudkeys, last_aswer_time)
 
         cats = self.cats_db.find(query)
-
+        # TODO filter cats were
+        # cats = [cat for cat in cats if cat.dt >= entity.dt]
         if not cats:
             return
         closest_cats = self.matcher.find_n_closest(people, cats,max_n=self.cats_in_answer)
 
 
         for cl in closest_cats:
-            # TODO make table with answers. people id - sending cats.
-            # Than filter by sending cats id
-            cl = self.throw_sent_cats(cl)
+
+            # cl = self.throw_sent_cats(cl)
             if len(cl.cats) > 0:
                 cl.person.dt = time()
                 self.people_db.update(cl.person)
-                self.bot_loader.upload(cl)
+                # self.bot_loader.upload(cl)
+                self.bot_loader.match_notify(cl)
 
-    def throw_sent_cats(self, closest_cats: ClosestCats):
-        # TODO make table with answers. people id - sending cats.
-        pass
+
+
     def recheck_cats_in_search(self, quadkey: str):
         quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
         people = self.people_db.find({"quadkey": {"$in": quadkey_query},

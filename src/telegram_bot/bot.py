@@ -33,6 +33,7 @@ s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_secret_access_key,
 )
 UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
+# ReturnCb = CallbackData("menu_cb", "action")
 
 class RStates(StatesGroup):
     saw = State()
@@ -40,22 +41,25 @@ class RStates(StatesGroup):
     geo = State()
     ask_extra_info = State()
 
+#TODO make return to menu command
+# @dp.callback_query_handler(ReturnCb.filter(action=["return"]))
 
+# TODO fix case with compress image
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
     buttons.append(types.KeyboardButton(text="My Profile"))
+    buttons.append(types.KeyboardButton(text="My Matches"))
     keyboard.add(*buttons)
     await message.answer(
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
         reply_markup=keyboard,
     )
 
-# TODO отписка ото всех
 @dp.message_handler(Text(equals="Unsubscribe all", ignore_case=True))
 async def unsubscribe_all(message: types.Message, state: FSMContext):
     cats_data = await state.get_data()
@@ -68,10 +72,10 @@ async def unsubscribe_all(message: types.Message, state: FSMContext):
     await message.answer(text='You unsubsscribed from all cats')
 
 
-@dp.message_handler(Text(equals="Menu", ignore_case=True))
-async def return_to_menu(message: types.Message, state: FSMContext):
-    pass
-    # TODO make menu
+# @dp.message_handler(Text(equals="Menu", ignore_case=True))
+# async def return_to_menu(message: types.Message, state: FSMContext):
+#     await  state.finish()
+#     await message.answer(text='/start')
 
 
 async def send_msgs_with_cats(message, cats):
@@ -95,6 +99,12 @@ async def send_msgs_with_cats(message, cats):
                                 reply_markup=get_keyboard_fab(cat._id),
                                 parse_mode="HTML")
 
+
+
+@dp.message_handler(Text(equals="My Matches", ignore_case=True))
+async def matches(message: types.Message):
+    await message.answer(
+        "In dev")
 
 
 @dp.message_handler(Text(equals="My Profile", ignore_case=True))
@@ -135,8 +145,9 @@ async def profile(message: types.Message, state):
             "You haven't lost your cat yet!", reply_markup=types.ReplyKeyboardRemove())
 
     buttons = []
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    buttons.append(types.KeyboardButton(text="Menu"))
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    # buttons.append(types.KeyboardButton(text="Menu", callback_data=ReturnCb.new(
+    #                                                                 action="return") ))
     buttons.append(types.KeyboardButton(text="Unsubscribe all"))
     keyboard.add(*buttons)
     await message.answer(

@@ -69,8 +69,22 @@ class CatsMatcher:
         return D, I
 
     def __get_by_idx(self, l: List, idxs: List[int]):
-        return [l[idx] for idx in idxs if idx >= 0]
+        ans = []
+        for idx in idxs:
+            if idx >= 0:
+                ans.append(l[idx])
+        # [l[idx] for idx in idxs if idx >= 0]
+        return ans
+    # TODO there is an error index out of range
 
+    # def __sent_cats_filter(self, stored_cats, D, I, entity):
+    #     dont_sent_cats = [cat for cat in stored_cats if cat.dt <= entity.dt]
+    #     for i, cat in enumerate(stored_cats):
+    #         if cat.dt <= entity.dt
+    #         stored_cats.pop(i)
+    #         D.pop(i)
+    #         I.pop(i)
+    #     return stored_cats, D, I,
     def create_distances_df(
         self,
         for_check: List[Entity],
@@ -80,12 +94,19 @@ class CatsMatcher:
     ):
         closest_cats = []
         for i, entity in tqdm(enumerate(for_check)):
-            dont_sent_cats = [cat for cat in stored_cats if cat.dt >= entity.dt]
-            closest = self.__get_by_idx(dont_sent_cats, list(I[i]))  # TODO dt filter
-            distances = list(D[i])[: len(closest)]
-            closest_cats.append(ClosestCats(entity, closest, distances))
-        return closest_cats
+            _stored_cats, _D, _I = stored_cats.copy(), D.copy(), I.copy()
+            # self.__sent_cats_filter(_stored_cats, _D, _I, entity)
+            # # TODO make table with answers. people id - sending cats.
+            # # Than filter by sending cats id
 
+            closest = self.__get_by_idx(_stored_cats, list(_I[i]))  # TODO dt filter
+            distances = list(_D[i])[: len(closest)]
+            closest_cats.append(ClosestCats(entity, closest, distances))
+
+        return closest_cats
+    def throw_sent_cats(self, person: Entity,cats: List[Cat]):
+        # TODO make table with answers. people id - sending cats.
+        pass
     def _get_embeddings(self, entities: List[Entity]):
         all_embeddings = []
         embeddings_belonging = []

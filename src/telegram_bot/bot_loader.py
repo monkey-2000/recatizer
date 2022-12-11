@@ -1,7 +1,7 @@
 from time import sleep
 
 import cv2
-from telegram import Bot, InputMediaPhoto
+from telegram import Bot, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
 from json import dumps
 from src.entities.cat import ClosestCats
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
@@ -15,6 +15,22 @@ class DataUploader:
             s3_config.aws_access_key_id, s3_config.aws_secret_access_key
         )
 
+    def match_notify(self, closest: ClosestCats):
+        closest_cats_amount = len(closest.cats)
+        if closest_cats_amount == 1:
+            comment = "Good news! Your cat {0} have {1} match. You can check it in \my_matches".format(closest.person._id, closest_cats_amount)
+        else:
+            comment = "Good news! Your cat {0} have {1} matches. You can check it in \my_matches".format(closest.person._id, closest_cats_amount)
+
+        cat_image = self.s3_client.load_image(closest.person.paths[0])
+        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+        cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
+
+        self.bot.send_photo(
+            closest.person.chat_id,
+            photo=cat_image_bytes,
+            caption=comment
+        )
 
     def upload(self, closest: ClosestCats):
 
