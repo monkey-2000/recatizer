@@ -2,7 +2,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 
-from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
+from src.services.mongo_service import CatsMongoClient, PeopleMongoClient, AnswersMongoClient
 
 
 class UserProfileClient():
@@ -11,7 +11,7 @@ class UserProfileClient():
         client = MongoClient(mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
-
+        self.answers_db = AnswersMongoClient(client.main)
 
     def find_all_user_cats(self, chat_id: int):
         query = {"chat_id": chat_id, "is_active": True}
@@ -19,6 +19,10 @@ class UserProfileClient():
         user_cats["saw_cats"] = self.cats_db.find(query)
         user_cats["find_cats"] = self.people_db.find(query)
         return user_cats
+
+
+    def find_all_cat_matches(self, cat_id):
+        pass
 
     def set_subscription_status(self, cat_id: str, set_status: bool):
         cat_mongo_id = ObjectId(cat_id)

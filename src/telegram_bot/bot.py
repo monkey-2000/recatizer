@@ -7,7 +7,6 @@ import cv2
 import mercantile
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
@@ -15,6 +14,7 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified
 
 from src.services.user_profile_service import UserProfileClient
+from src.telegram_bot.bot_tools.matches_handler import send_matches_cats
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
@@ -52,8 +52,8 @@ async def start(message: types.Message, state: FSMContext):
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
-    buttons.append(types.KeyboardButton(text="My Profile"))
-    buttons.append(types.KeyboardButton(text="My Matches"))
+    buttons.append(types.KeyboardButton(text="My subscriptions"))
+    buttons.append(types.KeyboardButton(text="My matches"))
     keyboard.add(*buttons)
     await message.answer(
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
@@ -81,7 +81,7 @@ async def unsubscribe_all(message: types.Message, state: FSMContext):
 async def send_msgs_with_cats(message, cats):
     for i, cat in enumerate(cats):
         sent_date = datetime.fromtimestamp(cat.dt)
-        # TODO make good  format
+        # TODO make good  format witiout msec
         comment = "<b> Cat id {2}</b>\n"\
                   "Sending time{0}\n" \
                   "You wrote an info about: {1}".format(sent_date, cat.additional_info, cat._id)
@@ -101,13 +101,20 @@ async def send_msgs_with_cats(message, cats):
 
 
 
-@dp.message_handler(Text(equals="My Matches", ignore_case=True))
-async def matches(message: types.Message):
+@dp.message_handler(Text(equals="My matches", ignore_case=True))
+async def matches(message: types.Message, state):
     await message.answer(
         "In dev")
+    cats = user_profile.find_all_user_cats(message.from_user.id)
+    cats = cats["find_cats"]
+    await send_matches_cats(message, cats)
+
+    # cats_data = await state.get_data()
+    # cats_data['cats'] = cats
+    # find_all_cat_matches(self, cat_id)
 
 
-@dp.message_handler(Text(equals="My Profile", ignore_case=True))
+@dp.message_handler(Text(equals="My subscriptions", ignore_case=True))
 async def profile(message: types.Message, state):
     cats = user_profile.find_all_user_cats(message.from_user.id)
     cats_data = await state.get_data()
