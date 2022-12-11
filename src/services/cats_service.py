@@ -5,15 +5,14 @@ from typing import List
 
 from pymongo import MongoClient
 
-
-
+from src.entities.answer import Answer
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
 from src.entities.cat import Cat, ClosestCats
 from src.entities.person import Person
 from src.services.matcher import CatsMatcher, Predictor
-from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
+from src.services.mongo_service import CatsMongoClient, PeopleMongoClient, AnswersMongoClient
 
 
 class CatsService(CatsServiceBase):
@@ -23,6 +22,7 @@ class CatsService(CatsServiceBase):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
+        self.answers_db = AnswersMongoClient(client.main)
         self.matcher = CatsMatcher()
         self.predictor = Predictor(
             config.s3_client_config, config.models_path, config.local_models_path
@@ -46,7 +46,7 @@ class CatsService(CatsServiceBase):
         return True
 
     def __get_query(self, qudkeys: list, t_last_aswers=[-float('inf')]):
-        # TODO dont send saw cats and find man with same chat id
+
         query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
         if 'no_quad' in qudkeys:
             query = {}
@@ -54,14 +54,7 @@ class CatsService(CatsServiceBase):
         return query
 
 
-    # def __get_query(self, people):
-    #     qudkeys = list({person.quadkey for person in people})
-    #     query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
-    #     if 'no_quad' in qudkeys:
-    #         query = {}
-    #     last_aswer_time = list({person.dt for person in people})
-    #     query['dt'] = {'$gte':  min(last_aswer_time)}
-    #     return query
+
 
 
 
@@ -72,8 +65,8 @@ class CatsService(CatsServiceBase):
         query = self.__get_query(qudkeys, last_aswer_time)
 
         cats = self.cats_db.find(query)
-        # TODO filter cats were
-        # cats = [cat for cat in cats if cat.dt >= entity.dt]
+
+
         if not cats:
             return
         closest_cats = self.matcher.find_n_closest(people, cats,max_n=self.cats_in_answer)
@@ -84,9 +77,11 @@ class CatsService(CatsServiceBase):
             # cl = self.throw_sent_cats(cl)
             if len(cl.cats) > 0:
                 cl.person.dt = time()
-                self.people_db.update(cl.person)
-                # self.bot_loader.upload(cl)
-                self.bot_loader.match_notify(cl)
+                cl.cats = self.answers_db.filter_matches(cl.person._id, cl.cats)
+                if cl.cats:
+                    self.answers_db.add_matches(cl)
+                    self.people_db.update(cl.person)
+                    self.bot_loader.match_notify(cl)
 
 
 
@@ -117,8 +112,8 @@ class CatsService(CatsServiceBase):
         #     person.embeddings = answer.embeddings
         # else:
         person.embeddings = self.get_embs(person.paths)
-
         person = self.people_db.save(person)
+
         self.__find_similar_cats([person])
 
 

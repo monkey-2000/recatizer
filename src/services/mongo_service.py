@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from src.entities.answer import Answer
 from src.entities.base import Entity
-from src.entities.cat import Cat
+from src.entities.cat import Cat, ClosestCats
 from src.entities.person import Person
 
 
@@ -73,3 +74,54 @@ class PeopleMongoClient(MongoClientBase):
         ans = self.people_collection.update_one(query, updated_person)
         if not ans.acknowledged:
             return None
+
+
+class AnswersMongoClient(MongoClientBase):
+    def __init__(self, db):
+        self.answers_collection = db.answers
+
+    def save(self, answer: Answer):
+        ans = self.answers_collection.insert_one(answer.as_json_wo_none())
+        if not ans.acknowledged:
+            return None
+
+
+    def find(self, query: dict):
+        cursor = self.answers_collection.find(query)
+        answers = list(cursor)
+        answers = [Answer.from_bson(p) for p in answers]
+        return answers
+
+
+    def filter_matches(self, person_id: str, match_cats: list[Cat]):
+        """delete matches wich in answers yet (dont send same answers)"""
+        filtered_matches = []
+        for cat in match_cats:
+            query = { "wanted_cat_id": person_id, "match_cat_id": cat._id}
+            print(list(self.answers_collection.find(query)))
+            if not list(self.answers_collection.find(query)):
+                filtered_matches.append(cat)
+        return filtered_matches
+
+    def add_matches(self, closest_cat: ClosestCats):
+        person_id = closest_cat.person._id
+        for cat in closest_cat.cats:
+            answer = Answer(_id=None,
+                       wanted_cat_id=person_id,
+                       match_cat_id=cat._id,
+                       user_answer=-1)
+            self.save(answer)
+    def delete(self, query: dict):
+        self.people_collection.delete_one(query)
+
+    def update(self, person_id: str, cat_id: str):
+        pass
+        # query = {'_id': person_id}
+        # set_command = {"$set": person.as_json_wo_none()}
+        # match_cats_id = [cat._id for cat in closest_cats.cats]
+        #
+        # # updated_answer = {"$push": {"match_cats_id": {"$each": {"$set": match_cats_id}},
+        # #                             "answers": {"$each": {"$set": answers}}}}
+        # ans = self.answers_collection.update_one(query, updated_answer)
+        # if not ans.acknowledged:
+        #     return None
