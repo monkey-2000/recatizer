@@ -9,7 +9,9 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
-from src.telegram_bot.bot_tools.subscribtion_handler import register_subscribtion_handlers
+from src.telegram_bot.bot_tools.subscribtion_handler import (
+    register_subscribtion_handlers,
+)
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
@@ -30,13 +32,15 @@ s3_client = YandexS3Client(
 # UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
 # ReturnCb = CallbackData("menu_cb", "action")
 
+
 class RStates(StatesGroup):
     saw = State()
     find = State()
     geo = State()
     ask_extra_info = State()
 
-#TODO make return to menu command
+
+# TODO make return to menu command
 # @dp.callback_query_handler(ReturnCb.filter(action=["return"]))
 
 # TODO fix case with compress image
@@ -65,6 +69,7 @@ async def lost_cat(message: types.Message, state: FSMContext):
     await state.set_state(RStates.find)
     await state.update_data(kafka_topic="find_cat")
 
+
 @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
 async def saw_cat(message: types.Message, state: FSMContext):
     await message.answer(
@@ -92,13 +97,11 @@ def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
 async def update_data(state, paths: list, cat_name, person_name, user_id):
 
     if person_name == None:
-        person_name = 'BORIS BRITVA' ## TODO add name generator service
+        person_name = "BORIS BRITVA"  ## TODO add name generator service
     await state.update_data(
-        s3_paths=paths,
-        cat_name=cat_name,
-        person_name=person_name,
-        user_id=user_id
+        s3_paths=paths, cat_name=cat_name, person_name=person_name, user_id=user_id
     )
+
 
 @dp.message_handler(
     is_media_group=True,
@@ -117,7 +120,7 @@ async def save_album_to_s3(
             s3_paths.append(s3_path)
 
     await state.set_state(RStates.ask_extra_info)
-    await  update_data(state, s3_paths, cat_name, None, message.from_user.id)
+    await update_data(state, s3_paths, cat_name, None, message.from_user.id)
 
     await message.answer("Please write some extra info about this cat")
 
@@ -126,9 +129,10 @@ async def save_album_to_s3(
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
     s3_path = await save_to_s3(message)
     await state.set_state(RStates.ask_extra_info)
-    person_name = '{0} ({1})'.format(message.from_user.first_name,
-                                     message.from_user.username)
-    await  update_data(state, [s3_path], cat_name, person_name, message.from_user.id)
+    person_name = "{0} ({1})".format(
+        message.from_user.first_name, message.from_user.username
+    )
+    await update_data(state, [s3_path], cat_name, person_name, message.from_user.id)
     await message.answer("Please write some extra info about this cat")
 
 
@@ -169,8 +173,8 @@ async def handle_location(message: types.Message, state: FSMContext):
 @dp.message_handler(Text(equals="No", ignore_case=True), state=RStates.geo)
 async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
-    #cat_data["quadkey"] = None # TODO fix it
-    cat_data["quadkey"] = 'no_quad'
+    # cat_data["quadkey"] = None # TODO fix it
+    cat_data["quadkey"] = "no_quad"
     is_sent = await send_msgs_to_model(cat_data)
 
     if not is_sent:

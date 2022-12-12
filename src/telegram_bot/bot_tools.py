@@ -4,18 +4,20 @@ from typing import Optional
 from aiogram.utils.callback_data import CallbackData
 
 
-
-
 # class NumbersCallbackFactory(CallbackData, prefix="fabnum"):
 #     action: str
 #     value: Optional[int]
 
-cb= CallbackData("id", "action")
+cb = CallbackData("id", "action")
+
+
 def get_keyboard_fab(cat_id):
 
     buttons = [
-        types.InlineKeyboardButton(text="Unsubscribe", callback_data=cb.new(action="unsubsscribe",
-                                                                     cat_id=cat_id)),
+        types.InlineKeyboardButton(
+            text="Unsubscribe",
+            callback_data=cb.new(action="unsubsscribe", cat_id=cat_id),
+        ),
     ]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)

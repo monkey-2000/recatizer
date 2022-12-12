@@ -37,8 +37,6 @@ class AlbumMiddleware(BaseMiddleware):
             # data["cache"] = self.cats_cache
             return
 
-
-
         try:
             self.album_data[message.media_group_id].append(message)
             raise CancelHandler()  # Tell aiogram to cancel handler for this group element
@@ -55,7 +53,6 @@ class AlbumMiddleware(BaseMiddleware):
 
             message.conf["is_last"] = True
             data["cat_name"] = str(uuid.uuid4())
-
 
     async def on_post_process_message(
         self, message: types.Message, result: dict, data: dict
