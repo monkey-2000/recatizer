@@ -71,7 +71,7 @@ class CatsService(CatsServiceBase):
             return
         closest_cats = self.matcher.find_n_closest(people, cats,max_n=self.cats_in_answer)
 
-
+        # TODO fix bug and dontsend not active cats
         for cl in closest_cats:
 
             # cl = self.throw_sent_cats(cl)
@@ -82,6 +82,8 @@ class CatsService(CatsServiceBase):
                     self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
                     self.bot_loader.match_notify(cl)
+                    self.bot_loader.upload(cl)
+
 
 
 

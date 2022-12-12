@@ -18,10 +18,13 @@ class DataUploader:
     def match_notify(self, closest: ClosestCats):
         closest_cats_amount = len(closest.cats)
         if closest_cats_amount == 1:
-            comment = "Good news! Your cat {0} have {1} match. You can check it in \my_matches".format(closest.person._id, closest_cats_amount)
+            comment = "Good news! Your cat {0} have {1} match. " \
+                      "Go to the \my_matches and get contact information " \
+                      "if your cat is among the matches ".format(closest.person._id, closest_cats_amount)
         else:
-            comment = "Good news! Your cat {0} have {1} matches. You can check it in \my_matches".format(closest.person._id, closest_cats_amount)
-
+            comment = "Good news! Your cat {0} have {1} matches. " \
+                      "Go to the \my_matches and get contact information " \
+                      "if your cat is among the matches ".format(closest.person._id, closest_cats_amount)
         cat_image = self.s3_client.load_image(closest.person.paths[0])
         cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
         cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
@@ -34,19 +37,25 @@ class DataUploader:
 
     def upload(self, closest: ClosestCats):
 
+
         closest_cats_amount = len(closest.cats)
-        self.bot.send_message(
-            closest.person.chat_id, f"We found {closest_cats_amount} similar cats."
-        )
+
         for cat_num, cat in enumerate(closest.cats):
             media_group = []
-            self.bot.send_message(
-                closest.person.chat_id, f"Cat {cat_num + 1} from {closest_cats_amount}."
-            )
+
             for path in cat.paths:
+
                 cat_image = self.s3_client.load_image(path)
                 cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
                 cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
                 media_group.append(InputMediaPhoto(media=cat_image_bytes))
-            self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
-            self.bot.send_message(closest.person.chat_id, cat.additional_info)
+
+            self.bot.send_message(chat_id=closest.person.chat_id,
+                                        text="-------cat {}-------".format(cat._id))
+            self.bot.send_media_group(chat_id=closest.person.chat_id,
+                                      media=media_group)
+            self.bot.send_message(chat_id=closest.person.chat_id,
+                                  text=cat.additional_info)
+
+            self.bot.send_message(chat_id=closest.person.chat_id,
+                                        text="--------------------")
