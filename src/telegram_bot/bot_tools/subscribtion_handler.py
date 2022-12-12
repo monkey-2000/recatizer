@@ -162,8 +162,3 @@ def register_subscribtion_handlers(dp: Dispatcher):
         unsubscribe_all, Text(equals="Unsubscribe all", ignore_case=True), state="*"
     )
 
-
-# @dp.message_handler(Text(equals="My subscriptions", ignore_case=True))
-# @dp.callback_query_handler(UnsubscribeCb.filter(action=["unsubsscribe"]))
-# @dp.callback_query_handler(UnsubscribeCb.filter(action=["subsscribe"]))
-# @dp.message_handler(Text(equals="Unsubscribe all", ignore_case=True))

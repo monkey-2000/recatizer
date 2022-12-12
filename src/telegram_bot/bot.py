@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 
@@ -7,6 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.types import BotCommand
 
 from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
 from src.telegram_bot.bot_tools.subscribtion_handler import (
@@ -18,13 +20,14 @@ from src.telegram_bot.middleware import AlbumMiddleware
 from src.utils.s3_client import YandexS3Client
 
 
-bot = Bot(token=bot_config.token)
+
 
 storage = MemoryStorage()
 kafka_producer = Producer()
 
-
+bot = Bot(token=bot_config.token)
 dp = Dispatcher(bot, storage=storage)
+
 s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_access_key_id,
     bot_config.s3_client_config.aws_secret_access_key,
@@ -39,6 +42,10 @@ class RStates(StatesGroup):
     geo = State()
     ask_extra_info = State()
 
+
+async def set_commands(bot: Bot):
+    commands = [BotCommand(command='/start', description="go to main menu")]
+    await bot.set_my_commands(commands)
 
 # TODO make return to menu command
 # @dp.callback_query_handler(ReturnCb.filter(action=["return"]))
@@ -212,8 +219,23 @@ async def send_msgs_to_model(cat_data):
     return True
 
 
+# def main():
+#     register_add_links_handlers(dp)
+#     register_subscribtion_handlers(dp)
+#
+#     await set_commands(bot)
+#
+#     dp.middleware.setup(AlbumMiddleware())
+#     executor.start_polling(dp, skip_updates=True, timeout=10 * 60)
+
 if __name__ == "__main__":
+    # asyncio.run(main())
     register_add_links_handlers(dp)
     register_subscribtion_handlers(dp)
+
+    # await set_commands(bot)
+
     dp.middleware.setup(AlbumMiddleware())
     executor.start_polling(dp, skip_updates=True, timeout=10 * 60)
+
+
