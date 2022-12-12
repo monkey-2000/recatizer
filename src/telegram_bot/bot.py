@@ -1,20 +1,14 @@
 import os
 import uuid
-from contextlib import suppress
-from datetime import datetime
 
-import cv2
 import mercantile
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from aiogram.utils.callback_data import CallbackData
-from aiogram.utils.exceptions import MessageNotModified
 
-from src.services.user_profile_service import UserProfileClient
-from src.telegram_bot.bot_tools.matches_handler import send_user_cats, register_add_links_handlers
+from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
 from src.telegram_bot.bot_tools.subscribtion_handler import register_subscribtion_handlers
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
@@ -60,144 +54,6 @@ async def start(message: types.Message, state: FSMContext):
         "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
         reply_markup=keyboard,
     )
-
-# @dp.message_handler(Text(equals="Unsubscribe all", ignore_case=True))
-# async def unsubscribe_all(message: types.Message, state: FSMContext):
-#     cats_data = await state.get_data()
-#     cats = []
-#     cats.extend(cats_data["cats"]["saw_cats"])
-#     cats.extend(cats_data["cats"]["find_cats"])
-#
-#     for cat in  cats:
-#         user_profile.set_subscription_status(cat._id, set_status=False)
-#     await message.answer(text='You unsubsscribed from all cats')
-
-
-# @dp.message_handler(Text(equals="Menu", ignore_case=True))
-# async def return_to_menu(message: types.Message, state: FSMContext):
-#     await  state.finish()
-#     await message.answer(text='/start')
-
-
-# async def send_msgs_with_cats(message, cats):
-#     for i, cat in enumerate(cats):
-#         sent_date = datetime.fromtimestamp(cat.dt)
-#         # TODO make good  format witiout msec
-#         comment = "<b> Cat id {2}</b>\n"\
-#                   "Sending time{0}\n" \
-#                   "You wrote an info about: {1}".format(sent_date, cat.additional_info, cat._id)
-#
-#         cat_image = s3_client.load_image(cat.paths[0])
-#         n, m, _ = cat_image.shape
-#
-#         cat_image = cv2.resize(cat_image, (100, 100))
-#         cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-#         cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-#
-#         await message.reply_photo(
-#                                 photo=cat_image_bytes,
-#                                 caption=comment ,
-#                                 reply_markup=get_keyboard_fab(cat._id),
-#                                 parse_mode="HTML")
-
-
-
-# @dp.message_handler(Text(equals="My matches", ignore_case=True))
-# async def matches(message: types.Message, state):
-#     await message.answer(
-#         "In dev")
-#     cats = user_profile.find_all_user_cats(message.from_user.id)
-#     cats = cats["find_cats"]
-#     await send_user_cats(message, cats)
-
-    # cats_data = await state.get_data()
-    # cats_data['cats'] = cats
-    # find_all_cat_matches(self, cat_id)
-
-
-# @dp.message_handler(Text(equals="My subscriptions", ignore_case=True))
-# async def profile(message: types.Message, state):
-#     cats = user_profile.find_all_user_cats(message.from_user.id)
-#     cats_data = await state.get_data()
-#     cats_data['cats'] = cats
-#     await state.update_data(cats_data)
-#
-#     # TODO make fun
-#     if len(cats["find_cats"]) > 0:
-#         if len(cats["find_cats"]) == 1:
-#             msg = "<b>You found {0} cat. There is:</b>".format(len(cats["find_cats"]))
-#         else:
-#             msg = "<b>You found  {0} cats. There are:</b>".format(len(cats["find_cats"]))
-#
-#         await message.answer(msg, parse_mode="HTML")
-#
-#         await send_msgs_with_cats(message, cats["find_cats"])
-#     else:
-#         await message.answer(
-#             "You haven't uploaded the cats you found yet", reply_markup=types.ReplyKeyboardRemove()
-#         )
-#
-#
-#     if len(cats["saw_cats"]) > 0:
-#         if len(cats["saw_cats"]) == 1:
-#             msg = "<b>You saw {0} cat. There is:</b>".format(len(cats["saw_cats"]))
-#         else:
-#             msg = "<b>You saw  {0} cats. There are:</b>".format(len(cats["saw_cats"]))
-#
-#         await message.answer(msg,parse_mode="HTML")
-#
-#         await send_msgs_with_cats(message, cats["saw_cats"])
-#
-#     else:
-#         await message.answer(
-#             "You haven't lost your cat yet!", reply_markup=types.ReplyKeyboardRemove())
-#
-#     buttons = []
-#     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-#     # buttons.append(types.KeyboardButton(text="Menu", callback_data=ReturnCb.new(
-#     #                                                                 action="return") ))
-#     buttons.append(types.KeyboardButton(text="Unsubscribe all"))
-#     keyboard.add(*buttons)
-#     await message.answer(
-#         "That is all", reply_markup=keyboard
-#     )
-
-
-# def get_keyboard_fab(cat_id, action="unsubsscribe"):
-#
-#     if action == "unsubsscribe":
-#         text = "Unsubscribe"
-#     else:
-#         text = "Subscribe"
-#
-#     buttons = [
-#         types.InlineKeyboardButton(text=text, callback_data=UnsubscribeCb.new(
-#                                                                     action=action,
-#                                                                     cat_id=cat_id)),
-#     ]
-#     keyboard = types.InlineKeyboardMarkup(row_width=1)
-#     keyboard.add(*buttons)
-#     return keyboard
-
-# async def update_num_text_fab(message: types.Message, action: str, cat_id: str):
-#     with suppress(MessageNotModified):
-#         await  message.edit_reply_markup(reply_markup=get_keyboard_fab(action=action, cat_id=cat_id))
-
-# @dp.callback_query_handler(UnsubscribeCb.filter(action=["unsubsscribe"]))
-# async def callbacks(call: types.CallbackQuery, callback_data: dict):
-#     cat_id = callback_data["cat_id"]
-#     user_profile.set_subscription_status(cat_id , set_status=False)
-#
-#     await update_num_text_fab(call.message, action="subsscribe", cat_id=cat_id)
-#     await call.answer(text='You unsubsscribed')
-
-# @dp.callback_query_handler(UnsubscribeCb.filter(action=["subsscribe"]))
-# async def callbacks(call: types.CallbackQuery, callback_data: dict):
-#     cat_id = callback_data["cat_id"]
-#     user_profile.set_subscription_status(cat_id, set_status=True)
-#
-#     await update_num_text_fab(call.message, action="unsubsscribe", cat_id=cat_id)
-#     await call.answer(text='You subsscribed')
 
 
 @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
