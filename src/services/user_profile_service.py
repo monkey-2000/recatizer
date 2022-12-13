@@ -19,10 +19,32 @@ class UserProfileClient():
         user_cats["saw_cats"] = self.cats_db.find(query)
         user_cats["find_cats"] = self.people_db.find(query)
         return user_cats
+# TODO need to connection via tables. The unsub, dont show matches with cat
+    def get_wanted_cats(self, chat_id: int):
+        query = {"chat_id": chat_id, "is_active": True}
+        user_cats = self.people_db.find(query)
+        return user_cats
+
+    def get_saw_cats(self, chat_id: int):
+        query = {"chat_id": chat_id, "is_active": True}
+        user_cats = self.cats_db.find(query)
+        return user_cats
+
+    def get_answers(self, wanted_cat_id: str):
+        wanted_cat_id = ObjectId(wanted_cat_id)
+        query = {"wanted_cat_id": wanted_cat_id}
+        user_cats = self.answers_db.find(query)
+        return user_cats
 
 
-    def find_all_cat_matches(self, cat_id):
-        pass
+    def cats_dbfind(self, query):
+        return self.cats_db.find(query)
+
+    # def get_matche(self, match_cat_id: ObjectId):
+    #
+    #     query =  {"_id": match_cat_id}
+    #     match_cats = self.cats.find(query)
+    #     return match_cats
 
     def set_subscription_status(self, cat_id: str, set_status: bool):
         cat_mongo_id = ObjectId(cat_id)

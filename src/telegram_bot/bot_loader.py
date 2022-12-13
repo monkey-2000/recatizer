@@ -46,8 +46,8 @@ class DataUploader:
         closest_cats_amount = len(closest.cats)
 
         for cat_num, cat in enumerate(closest.cats):
-            media_group = []
 
+            media_group = []
             for path in cat.paths:
 
                 cat_image = self.s3_client.load_image(path)
