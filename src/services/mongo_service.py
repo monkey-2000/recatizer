@@ -112,10 +112,17 @@ class AnswersMongoClient(MongoClientBase):
                        user_answer=-1)
             self.save(answer)
     def delete(self, query: dict):
-        self.people_collection.delete_one(query)
+        self.answers_collection.delete_one(query)
 
-    def update(self, person_id: str, cat_id: str):
-        pass
+    def update(self, answer: Answer):
+        """set answer value 0 - no; 1 - yes; -1 - user not answered yet"""
+        query = {'_id': answer._id}
+        updated_answer = {"$set": answer.as_json_wo_none()}
+        ans = self.answers_collection.update_one(query, updated_answer)
+        if not ans.acknowledged:
+            return None
+
+        # #                             "answers": {"$each": {"$set": answers}}}}
         # query = {'_id': person_id}
         # set_command = {"$set": person.as_json_wo_none()}
         # match_cats_id = [cat._id for cat in closest_cats.cats]
