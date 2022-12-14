@@ -21,8 +21,8 @@ s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_secret_access_key,
 )
 
+
 async def my_matches(message: types.Message):
-    await message.answer("In dev")
     cats = user_profile.find_all_user_cats(message.from_user.id)
     cats = cats["find_cats"]
     await send_user_cats(message, cats)
@@ -39,10 +39,12 @@ async def send_user_cats(message, cats):
                 sent_date, cat.additional_info, cat._id
             )
         )
-        keyboard = get_callback_kb(cat_id=cat._id,
-                                   callback=MatchesCb ,
-                                   action="show_matches",
-                                   text="Show matches")
+        keyboard = get_callback_kb(
+            cat_id=cat._id,
+            callback=MatchesCb,
+            action="show_matches",
+            text="Show matches",
+        )
         # await message.answer(
         #     text=comment, reply_markup=keyboard, parse_mode="HTML"
         # )
@@ -57,20 +59,6 @@ async def send_user_cats(message, cats):
             reply_markup=keyboard,
             parse_mode="HTML",
         )
-        # cat_image = s3_client.load_image(cat.paths[0])
-        # n, m, _ = cat_image.shape
-        #
-        # cat_image = cv2.resize(cat_image, (100, 100))
-        # cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-        # cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-        #
-        # await message.reply_photo(
-        #                         photo=cat_image_bytes,
-        #                         caption=comment ,
-        #                         reply_markup=get_keyboard_matches(cat._id),
-        #                         parse_mode="HTML")
-
-
 
 
 async def show_matches(call: types.CallbackQuery, callback_data: dict):
@@ -80,19 +68,20 @@ async def show_matches(call: types.CallbackQuery, callback_data: dict):
     if len(answers) == 0:
         await call.message.answer(text="Sorry, this cat dont have any matches yet")
 
-
     for i, answer in enumerate(answers):
         cat = user_profile.cats_db.find({"_id": answer.match_cat_id})
         await show_match(call.message, cat[0], answer)
 
-    no_cat_kb = get_callback_kb(cat_id=wanted_cat_id,
-                               callback=MatchesCb,
-                               action="no_wanted_cat",
-                               text="My cat is not here")
+    no_cat_kb = get_callback_kb(
+        cat_id=wanted_cat_id,
+        callback=MatchesCb,
+        action="no_wanted_cat",
+        text="My cat is not here",
+    )
 
-
-    await call.message.answer(text="Choose your cats please or:",
-                              reply_markup=no_cat_kb)
+    await call.message.answer(
+        text="Choose your cats please or:", reply_markup=no_cat_kb
+    )
 
 
 async def make_media_with_cat(cat: Cat):
@@ -104,47 +93,35 @@ async def make_media_with_cat(cat: Cat):
         media_group.append(InputMediaPhoto(media=cat_image_bytes))
     await media_group
 
+
 async def show_match(message, cat: Cat, answer: Answer):
-        # TODO make good  format witiout msec
+    # TODO make good  format witiout msec
 
-        # media_group = []
-        # for path in cat.paths:
-        #     cat_image = s3_client.load_image(path)
-        #     cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-        #     cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-        #     media_group.append(InputMediaPhoto(media=cat_image_bytes))
+    keyboard = get_callback_kb(
+        cat_id=answer._id, callback=MatchesCb, action="found_cat", text="This my cat"
+    )
 
-        keyboard = get_callback_kb(cat_id=answer._id,
-                                   callback= MatchesCb,
-                                   action="found_cat",
-                                   text="This my cat")
+    sent_date = datetime.fromtimestamp(cat.dt)
+    comment = "Info about{0}".format(sent_date)
+    # TODO send media groups
+    cat_image = s3_client.load_image(cat.paths[0])
+    cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+    cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
 
+    await message.reply_photo(
+        photo=cat_image_bytes,
+        caption=comment,
+        reply_markup=keyboard,
+        parse_mode="HTML",
+    )
 
-        sent_date = datetime.fromtimestamp(cat.dt)
-        comment = (
-            "Info about{0}".format(sent_date)
-        )
-        # TODO send media groups
-        cat_image = s3_client.load_image(cat.paths[0])
-        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-        cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-
-        await message.reply_photo(
-            photo=cat_image_bytes,
-            caption=comment,
-            reply_markup=keyboard,
-            parse_mode="HTML",
-        )
 
 async def mark_answer(call: types.CallbackQuery, callback_data: dict):
-    # if
 
     if callback_data["action"] == "no_wanted_cat":
 
-
-        text=f"Sorry, We dont find your cat:("
+        text = f"Sorry, We dont find your cat:("
         # TODO Mark all answers 0
-
 
     elif callback_data["action"] == "found_cat":
         answer_id = callback_data["cat_id"]
@@ -153,16 +130,12 @@ async def mark_answer(call: types.CallbackQuery, callback_data: dict):
         answer.user_answer = 1
         matched_cat = user_profile.cats_db.find({"_id": answer.match_cat_id})
         matched_cat = matched_cat[0]
-        text = "Yeeeeeeaaah, We hind your cat! \n This contact for you:" \
-               "{0}".format(matched_cat.person_name)
+        text = "Yeeeeeeaaah, We hind your cat! \n This contact for you:" "{0}".format(
+            matched_cat.person_name
+        )
         user_profile.answers_db.update(answer)
         ## TODO Cats remove from subscribe?
-    await call.message.answer(
-        text=text,
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-
-
+    await call.message.answer(text=text, reply_markup=types.ReplyKeyboardRemove())
 
 
 def register_add_links_handlers(dp: Dispatcher):

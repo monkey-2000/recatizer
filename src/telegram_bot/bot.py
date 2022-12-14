@@ -3,7 +3,7 @@ import os
 import uuid
 
 import mercantile
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -32,8 +32,7 @@ s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_access_key_id,
     bot_config.s3_client_config.aws_secret_access_key,
 )
-# UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
-# ReturnCb = CallbackData("menu_cb", "action")
+
 
 
 class RStates(StatesGroup):
@@ -45,6 +44,8 @@ class RStates(StatesGroup):
 
 async def set_commands(bot: Bot):
     commands = [BotCommand(command='/start', description="go to main menu")]
+                # BotCommand(command='/matches', description="show matches"),
+                # BotCommand(command='/my_cat', description="show my cats")]
     await bot.set_my_commands(commands)
 
 # TODO make return to menu command
@@ -62,7 +63,7 @@ async def start(message: types.Message, state: FSMContext):
     buttons.append(types.KeyboardButton(text="My matches"))
     keyboard.add(*buttons)
     await message.answer(
-        "Please press the button 'I lost my cat' if you are looking for your cat, and the another one if you saw someone's cat",
+        text='Hy',
         reply_markup=keyboard,
     )
 
@@ -219,23 +220,19 @@ async def send_msgs_to_model(cat_data):
     return True
 
 
-# def main():
-#     register_add_links_handlers(dp)
-#     register_subscribtion_handlers(dp)
-#
-#     await set_commands(bot)
-#
-#     dp.middleware.setup(AlbumMiddleware())
-#     executor.start_polling(dp, skip_updates=True, timeout=10 * 60)
-
-if __name__ == "__main__":
-    # asyncio.run(main())
+async def main():
     register_add_links_handlers(dp)
     register_subscribtion_handlers(dp)
 
-    # await set_commands(bot)
+    await set_commands(bot)
 
     dp.middleware.setup(AlbumMiddleware())
-    executor.start_polling(dp, skip_updates=True, timeout=10 * 60)
+    await dp.skip_updates()
+    await dp.start_polling()
+    # await executor.start_polling(dp, skip_updates=True, timeout=10 * 60)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 
 
