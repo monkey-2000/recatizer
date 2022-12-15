@@ -1,5 +1,5 @@
 numpy
-opencv-python
+
 faiss-cpu=1.7.2
 pandas
 torch
