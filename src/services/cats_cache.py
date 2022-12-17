@@ -1,40 +1,40 @@
-import time
-import uuid
-
-from bson.objectid import ObjectId
-from cachetools import FIFOCache
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-
-class CatsCache():
-    """Simple cache - each cat is {cat_id: [topic cat_id img_1 ... img_n] }"""
-    def __init__(self, max_size):
-        self.cats = FIFOCache(maxsize=max_size)
-        # self.cats =  MemoryStorage()
-
-    def add_cat(self, cat: dict):
-        # self.cats.update_data()
-        self.cats[(cat["cat_name"])] = [cat["kafka_topic"], cat["user_id"], cat["additional_info"]]
-        for hash_img_name in cat["s3_paths"]:
-            self.cats[cat["cat_name"]].append(hash_img_name)
-        return True
-
-    def find_person_cats(self, user_id: str):
-        person_cats = []
-        for cat_name in self.cats:
-            if self.cats[cat_name][1] == user_id:
-                person_cats.append((cat_name, self.cats[cat_name][0], self.cats[cat_name][2]))
-        return person_cats
-
-    def is_completed_cat(self, cat):
-        names = ["cat_name", "kafka_topic", "user_id", "additional_info", "s3_paths"]
-        for name in names:
-            if name not in cat:
-                print('no ' + name)
-                return False
-        return True
-
-
-                # TODO add tmp cache or cache service
+# import time
+# import uuid
+#
+# from bson.objectid import ObjectId
+# from cachetools import FIFOCache
+# from aiogram.contrib.fsm_storage.memory import MemoryStorage
+#
+# class CatsCache():
+#     """Simple cache - each cat is {cat_id: [topic cat_id img_1 ... img_n] }"""
+#     def __init__(self, max_size):
+#         self.cats = FIFOCache(maxsize=max_size)
+#         # self.cats =  MemoryStorage()
+#
+#     def add_cat(self, cat: dict):
+#         # self.cats.update_data()
+#         self.cats[(cat["cat_name"])] = [cat["kafka_topic"], cat["user_id"], cat["additional_info"]]
+#         for hash_img_name in cat["s3_paths"]:
+#             self.cats[cat["cat_name"]].append(hash_img_name)
+#         return True
+#
+#     def find_person_cats(self, user_id: str):
+#         person_cats = []
+#         for cat_name in self.cats:
+#             if self.cats[cat_name][1] == user_id:
+#                 person_cats.append((cat_name, self.cats[cat_name][0], self.cats[cat_name][2]))
+#         return person_cats
+#
+#     def is_completed_cat(self, cat):
+#         names = ["cat_name", "kafka_topic", "user_id", "additional_info", "s3_paths"]
+#         for name in names:
+#             if name not in cat:
+#                 print('no ' + name)
+#                 return False
+#         return True
+#
+#
+#                 # TODO add tmp cache or cache service
 
     # def delete_sent_cats(self, person_id, cats):
     #
