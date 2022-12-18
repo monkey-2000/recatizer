@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.handler import CancelHandler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 
-from src.services.cats_cache import CatsCache
+# from src.services.cats_cache import CatsCache
 from src.telegram_bot.configs.bot_cfgs import bot_config
 
 

@@ -25,7 +25,10 @@ s3_client = YandexS3Client(
 async def my_matches(message: types.Message):
     cats = user_profile.find_all_user_cats(message.from_user.id)
     cats = cats["find_cats"]
-    await send_user_cats(message, cats)
+    if len(cats) > 0:
+        await send_user_cats(message, cats)
+    else:
+        await message.answer("You dont have any match yet:(")
 
 
 async def send_user_cats(message, cats):

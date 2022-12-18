@@ -113,13 +113,16 @@ async def unsubscribe_callback(call: types.CallbackQuery, callback_data: dict):
 async def unsubscribe_all(message: types.Message, state: FSMContext):
     cats_data = await state.get_data()
     cats = []
-    cats.extend(cats_data["cats"]["saw_cats"])
-    cats.extend(cats_data["cats"]["find_cats"])
-
-    for cat in cats:
-        user_profile.set_subscription_status(cat._id, set_status=False)
-    await message.answer(text="You unsubsscribed from all cats")
-
+    if "saw_cats" in cats_data["cats"]:
+        cats.extend(cats_data["cats"]["saw_cats"])
+    if "find_cats" in cats_data["cats"]:
+        cats.extend(cats_data["cats"]["find_cats"])
+    if cats:
+        for cat in cats:
+            user_profile.set_subscription_status(cat._id, set_status=False)
+        await message.answer(text="You unsubsscribed from all cats")
+    else:
+        await message.answer(text="You don't have any subs yet")
 
 async def send_msgs_with_cats(message, cats):
     for i, cat in enumerate(cats):
