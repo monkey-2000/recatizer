@@ -1,14 +1,29 @@
-from time import sleep
+
+from time import sleep, time
 
 import cv2
-from telegram import Bot, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
+# from aiogram import Bot, types
+# from aiogram.types import InputMediaPhoto
+# from aiogram.utils.callback_data import CallbackData
+import mercantile
+from telegram import Bot, InputMediaPhoto, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, \
+    InlineKeyboardMarkup, InputMediaDocument
 from json import dumps
-from src.entities.cat import ClosestCats
+
+from telegram.utils import types
+
+from src.configs.service_config import default_service_config
+from src.entities.cat import ClosestCats, Cat
+from src.entities.person import Person
+
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
 from src.utils.s3_client import YandexS3Client
 
 
+
 class DataUploader:
+
+
     def __init__(self, token, s3_config: S3ClientConfig):
         self.bot = Bot(token)
         self.s3_client = YandexS3Client(
@@ -41,11 +56,32 @@ class DataUploader:
             closest.person.chat_id, photo=cat_image_bytes, caption=comment
         )
 
+    def upload_one(self, closest: ClosestCats):
+        keyboard = ReplyKeyboardMarkup([[KeyboardButton("/mycat"), KeyboardButton("/not_may_cat")], ["return"]])
+
+        media_group = []
+        cat = closest.cats[0]
+        for path in cat.paths:
+            cat_image = self.s3_client.load_image(path)
+            cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+            cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
+            media_group.append(InputMediaPhoto(media=cat_image_bytes))
+        if cat.quadkey != "no_quad":
+            titlat = mercantile.quadkey_to_tile(cat.quadkey)
+            coo = mercantile.ul(titlat)
+            self.bot.send_location(chat_id=closest.person.chat_id, latitude=coo.lat, longitude=coo.lng)
+        self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
+        self.bot.send_message(
+            chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
+        )
+
+
     def upload(self, closest: ClosestCats):
 
         closest_cats_amount = len(closest.cats)
 
         for cat_num, cat in enumerate(closest.cats):
+
 
             media_group = []
             for path in cat.paths:
@@ -53,7 +89,9 @@ class DataUploader:
                 cat_image = self.s3_client.load_image(path)
                 cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
                 cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-                media_group.append(InputMediaPhoto(media=cat_image_bytes))
+                #media_group.append(InputMediaPhoto(media=cat_image_bytes))
+                media_group.append(InputMediaDocument(media=cat_image_bytes))
+
 
             self.bot.send_message(
                 chat_id=closest.person.chat_id,
@@ -61,9 +99,41 @@ class DataUploader:
             )
             self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
             self.bot.send_message(
-                chat_id=closest.person.chat_id, text=cat.additional_info
+                chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
             )
 
             self.bot.send_message(
                 chat_id=closest.person.chat_id, text="--------------------"
             )
+
+
+if __name__ == "__main__":
+    bot_loader = DataUploader(
+        default_service_config.bot_token, default_service_config.s3_client_config
+    )
+    cat1 = Cat(
+            _id=None,
+            paths=["users_data/c7c8b97c0e53983d8a0fd3bc2a53222bec4194454adcf3fe145a8dae5b950a19.jpg"],
+            quadkey="0313102310",
+            embeddings=None,
+            is_active=True,
+            additional_info="I miss",
+            chat_id=450390623,
+            person_name="BORRIZ",
+            dt=time()
+        )
+    person = Person( _id=None,
+                    paths=["users_data/c7c8b97c0e53983d8a0fd3bc2a53222bec4194454adcf3fe145a8dae5b950a19.jpg"],
+                    quadkey="no",
+                    embeddings=None,
+                    is_active=True,
+                    additional_info="no",
+                    chat_id=450390623,
+                    dt=-float('inf'))
+    cl = ClosestCats(
+        person = person,
+        cats=[cat1],
+        distances = [1.0])
+
+    bot_loader.upload_one(cl)
+

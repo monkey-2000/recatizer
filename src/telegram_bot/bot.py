@@ -59,11 +59,11 @@ async def start(message: types.Message, state: FSMContext):
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))
     buttons.append(types.KeyboardButton(text="I lost my cat"))
-    buttons.append(types.KeyboardButton(text="My subscriptions"))
-    buttons.append(types.KeyboardButton(text="My matches"))
+    # buttons.append(types.KeyboardButton(text="My subscriptions"))
+    # buttons.append(types.KeyboardButton(text="My matches"))
     keyboard.add(*buttons)
     await message.answer(
-        text='Hy',
+        text='Hi',
         reply_markup=keyboard,
     )
 
@@ -200,7 +200,9 @@ async def handle_location(message: types.Message, state: FSMContext):
     )
     await state.finish()
 
-
+@dp.message_handler(commands=["mycat"])
+async def add_user_handler(message):
+    await message.answer('ну вот тебе и today')
 def get_kafka_message(_cat_data):
     kafka_message = {
         "user_id": _cat_data["user_id"],
@@ -226,8 +228,8 @@ async def send_msgs_to_model(cat_data):
 
 
 async def main():
-    register_add_links_handlers(dp)
-    register_subscribtion_handlers(dp)
+    # register_add_links_handlers(dp)
+    # register_subscribtion_handlers(dp)
 
     await set_commands(bot)
 
