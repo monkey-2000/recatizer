@@ -51,6 +51,7 @@ class CatsService(CatsServiceBase):
         if 'no_quad' in qudkeys:
             query = {}
         query['dt'] = {'$gte': min(t_last_aswers)}
+        query['is_active'] = True
         return query
 
 
@@ -79,9 +80,10 @@ class CatsService(CatsServiceBase):
                 cl.person.dt = time()
                 cl.cats = self.answers_db.filter_matches(cl.person._id, cl.cats)
                 if cl.cats:
+                    # TODO if not ans
                     self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
-                    self.bot_loader.match_notify(cl)
+                   # self.bot_loader.match_notify(cl)
                     self.bot_loader.upload(cl)
 
 
@@ -90,7 +92,8 @@ class CatsService(CatsServiceBase):
     def recheck_cats_in_search(self, quadkey: str):
         quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
         people = self.people_db.find({"quadkey": {"$in": quadkey_query},
-                                      "dt": {"$lte": time() -  self.answer_time_delay}})
+                                      "dt": {"$lte": time() -  self.answer_time_delay},
+                                      "is_active": True})
         if len(people) == 0:
             return
         self.__find_similar_cats(people)

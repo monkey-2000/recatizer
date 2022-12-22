@@ -24,6 +24,7 @@ class ServiceConfig:
 
 default_service_config = ServiceConfig(
     mongoDB_url=os.environ.get("MONGO_URL"),
+    #mongoDB_url="mongodb://localhost:27017/"
     bot_token=os.environ.get("BOT_TOKEN"),
     kafka_broker_ip=["localhost:9092"],
     s3_client_config=S3ClientConfig(

@@ -128,7 +128,12 @@ async def save_album_to_s3(
             s3_paths.append(s3_path)
 
     await state.set_state(RStates.ask_extra_info)
-    await update_data(state, s3_paths, cat_name, None, message.from_user.id)
+
+    person_name = "{0} ({1})".format(
+        message.from_user.first_name, message.from_user.username
+    )
+
+    await update_data(state, s3_paths, cat_name, person_name, message.from_user.id)
 
     await message.answer("Please write some extra info about this cat")
 
