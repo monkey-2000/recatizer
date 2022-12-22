@@ -9,6 +9,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import BotCommand
+from aiogram.utils.callback_data import CallbackData
 
 from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
 from src.telegram_bot.bot_tools.subscribtion_handler import (
@@ -21,7 +22,7 @@ from src.utils.s3_client import YandexS3Client
 
 
 
-
+MatchesCb = CallbackData("matches", "action", "cat_id")
 storage = MemoryStorage()
 kafka_producer = Producer()
 
@@ -200,9 +201,15 @@ async def handle_location(message: types.Message, state: FSMContext):
     )
     await state.finish()
 
-@dp.message_handler(commands=["mycat"])
-async def add_user_handler(message):
-    await message.answer('ну вот тебе и today')
+@dp.message_handler(commands=["mycat"], state="*")
+async def show_matches(message: types.Message, state: FSMContext):
+    await message.answer("Ok")
+
+
+@dp.message_handler(commands=["not_may_cat"], state="*")
+async def show_matches(message: types.Message, state: FSMContext):
+    await message.answer("Not Ok")
+
 def get_kafka_message(_cat_data):
     kafka_message = {
         "user_id": _cat_data["user_id"],

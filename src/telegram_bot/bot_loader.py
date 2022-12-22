@@ -1,15 +1,17 @@
-
+import asyncio
 from time import sleep, time
 
 import cv2
-# from aiogram import Bot, types
-# from aiogram.types import InputMediaPhoto
+# from aiogram import Bot, types, Dispatcher
+# from aiogram.types import InputMediaPhoto, InputMediaDocument
+# from aiogram.utils import executor
 # from aiogram.utils.callback_data import CallbackData
+
 import mercantile
 from telegram import Bot, InputMediaPhoto, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, \
     InlineKeyboardMarkup, InputMediaDocument
 from json import dumps
-
+#
 from telegram.utils import types
 
 from src.configs.service_config import default_service_config
@@ -23,7 +25,7 @@ from src.utils.s3_client import YandexS3Client
 
 class DataUploader:
 
-
+    # MatchesCb = CallbackData("matches", "action", "cat_id")
     def __init__(self, token, s3_config: S3ClientConfig):
         self.bot = Bot(token)
         self.s3_client = YandexS3Client(
@@ -57,7 +59,9 @@ class DataUploader:
         )
 
     def upload_one(self, closest: ClosestCats):
-        keyboard = ReplyKeyboardMarkup([[KeyboardButton("/mycat"), KeyboardButton("/not_may_cat")], ["return"]])
+        keyboard = ReplyKeyboardMarkup([[KeyboardButton("/not_may_cat"), KeyboardButton("/mycat")], ["/start"]],
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
 
         media_group = []
         cat = closest.cats[0]
@@ -76,35 +80,80 @@ class DataUploader:
         )
 
 
-    def upload(self, closest: ClosestCats):
+    # async def _send_match(self, chat_id, cat):
+    #         buttons = [
+    #             types.InlineKeyboardButton(
+    #                 text="MyCat", callback_data=self.MatchesCb.new(action="yes", cat_id="1")
+    #             ),
+    #             types.InlineKeyboardButton(
+    #                 text="NotMyCat", callback_data=self.MatchesCb.new(action="no", cat_id="1")
+    #             )
+    #         ]
+    #         keyboard = types.InlineKeyboardMarkup(row_width=1)
+    #         keyboard.add(*buttons)
+    #
+    #         media_group = []
+    #         for path in cat.paths:
+    #
+    #             cat_image = self.s3_client.load_image(path)
+    #             cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+    #             cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
+    #             #media_group.append(InputMediaPhoto(media=cat_image_bytes))
+    #             media_group.append(InputMediaDocument(media=cat_image_bytes))
+    #
+    #         # await self.bot.send_media_group(chat_id=chat_id, media=media_group)
+    #         await  self.bot.send_message(
+    #             chat_id=chat_id, text=cat.additional_info, reply_markup=keyboard)
+    #
+    #
+    #
+    #
+    # def upload_in_loop(self, closest: ClosestCats):
+    #     # dp = Dispatcher(self.bot, loop= asyncio.get_event_loop())
+    #     # for cat in closest.cats:
+    #     #     dp.loop.create_task(self._send_match(chat_id=closest.person.chat_id,
+    #     #                                          cat=cat))
+    #     # # dp.loop.create_task(dp.loop.stop())
+    #     # # executor.start_polling(dp)
+    #     loop = asyncio.get_event_loop()
+    #     try:
+    #         loop.run_until_complete(asyncio.wait([self._send_match(chat_id=closest.person.chat_id,
+    #                                              cat=closest.cats[0])]))  # передайте точку входа
+    #     finally:
+    #         # действия на выходе, если требуются
+    #         pass
 
-        closest_cats_amount = len(closest.cats)
-
-        for cat_num, cat in enumerate(closest.cats):
 
 
-            media_group = []
-            for path in cat.paths:
-
-                cat_image = self.s3_client.load_image(path)
-                cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-                cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-                #media_group.append(InputMediaPhoto(media=cat_image_bytes))
-                media_group.append(InputMediaDocument(media=cat_image_bytes))
-
-
-            self.bot.send_message(
-                chat_id=closest.person.chat_id,
-                text="-------cat {}-------".format(cat._id),
-            )
-            self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
-            self.bot.send_message(
-                chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
-            )
-
-            self.bot.send_message(
-                chat_id=closest.person.chat_id, text="--------------------"
-            )
+    # def upload(self, closest: ClosestCats):
+    #
+    #     closest_cats_amount = len(closest.cats)
+    #
+    #     for cat_num, cat in enumerate(closest.cats):
+    #
+    #
+    #         media_group = []
+    #         for path in cat.paths:
+    #
+    #             cat_image = self.s3_client.load_image(path)
+    #             cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+    #             cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
+    #             #media_group.append(InputMediaPhoto(media=cat_image_bytes))
+    #             media_group.append(InputMediaDocument(media=cat_image_bytes))
+    #
+    #
+    #         self.bot.send_message(
+    #             chat_id=closest.person.chat_id,
+    #             text="-------cat {}-------".format(cat._id),
+    #         )
+    #         self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
+    #         self.bot.send_message(
+    #             chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
+    #         )
+    #
+    #         self.bot.send_message(
+    #             chat_id=closest.person.chat_id, text="--------------------"
+    #         )
 
 
 if __name__ == "__main__":
