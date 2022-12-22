@@ -5,10 +5,10 @@ import uuid
 import mercantile
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher import FSMContext, filters
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, Dice, ContentType
 from aiogram.utils.callback_data import CallbackData
 
 from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
@@ -204,11 +204,19 @@ async def handle_location(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=["mycat"], state="*")
 async def show_matches(message: types.Message, state: FSMContext):
     await message.answer("Ok")
+    # TODO check an mongo
+    # if no, then say we dont send cat
 
 
-@dp.message_handler(commands=["not_may_cat"], state="*")
+#@dp.message_handler(commands=["not_may_cat"], state="*")
+@dp.message_handler(commands=['help'], state="*")
 async def show_matches(message: types.Message, state: FSMContext):
-    await message.answer("Not Ok")
+    await message.answer(f'You value is ')
+
+@dp.message_handler(content_types=[ContentType.ANY])
+async def dice_value(message):
+  value = message.html_text
+  await message.answer(value)
 
 def get_kafka_message(_cat_data):
     kafka_message = {

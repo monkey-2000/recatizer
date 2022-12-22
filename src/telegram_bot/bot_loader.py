@@ -8,6 +8,7 @@ import cv2
 # from aiogram.utils.callback_data import CallbackData
 
 import mercantile
+from aiogram.utils import emoji
 from telegram import Bot, InputMediaPhoto, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, \
     InlineKeyboardMarkup, InputMediaDocument
 from json import dumps
@@ -59,9 +60,14 @@ class DataUploader:
         )
 
     def upload_one(self, closest: ClosestCats):
-        keyboard = ReplyKeyboardMarkup([[KeyboardButton("/not_may_cat"), KeyboardButton("/mycat")], ["/start"]],
+        keyboard = ReplyKeyboardMarkup([[KeyboardButton("/not_may_cat"), KeyboardButton("/mycat")], ["/start", "/I_found_my_cat"]],
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("\U0000274c"), KeyboardButton("\U0000274c")], ["\U00002b05", "/I_found_my_cat"]],
+            one_time_keyboard=True,
+            resize_keyboard=True)
+
 
         media_group = []
         cat = closest.cats[0]
