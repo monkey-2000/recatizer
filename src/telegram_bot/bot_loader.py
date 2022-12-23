@@ -158,7 +158,9 @@ class DataUploader:
         asyncio.run(self._send_matches(cats=closest.cats,
                                         chat_id=closest.person.chat_id))
 
-
+    def _upload(self, cats: list, chat_id: int):
+        asyncio.run(self._send_matches(cats=cats,
+                                       chat_id=chat_id))
 
 
 

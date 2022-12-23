@@ -11,8 +11,12 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import BotCommand, Dice, ContentType
 from aiogram.utils.callback_data import CallbackData
 
+from src.services.user_profile_service import UserProfileClient
+from src.telegram_bot.bot_tools.find_cat_handler import register_find_cat_handlers
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
-from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
+from src.telegram_bot.bot_tools.match_callbacks import register_match_handlers
+
+from src.telegram_bot.bot_tools.states import RStates
 from src.telegram_bot.bot_tools.subscribtion_handler import (
     register_subscribtion_handlers,
 )
@@ -23,26 +27,31 @@ from src.utils.s3_client import YandexS3Client
 
 
 
-MatchesCb = CallbackData("matches", "action", "cat_id")
+# MatchesCb = CallbackData("matches", "action", "cat_id")
 
 storage = MemoryStorage()
 kafka_producer = Producer()
 
 bot = Bot(token=bot_config.token)
+
+user_profile = UserProfileClient(bot_config)
+
 dp = Dispatcher(bot, storage=storage)
+register_find_cat_handlers(dp)
+register_match_handlers(dp)
 
-s3_client = YandexS3Client(
-    bot_config.s3_client_config.aws_access_key_id,
-    bot_config.s3_client_config.aws_secret_access_key,
-)
+# s3_client = YandexS3Client(
+#     bot_config.s3_client_config.aws_access_key_id,
+#     bot_config.s3_client_config.aws_secret_access_key,
+# )
 
 
 
-class RStates(StatesGroup):
-    saw = State()
-    find = State()
-    geo = State()
-    ask_extra_info = State()
+# class RStates(StatesGroup):
+#     saw = State()
+#     find = State()
+#     geo = State()
+#     ask_extra_info = State()
 
 
 async def set_commands(bot: Bot):
@@ -56,34 +65,27 @@ async def set_commands(bot: Bot):
 
 # TODO fix case with compress image
 
-MatchesCb = CallbackData("matches", "action", "cat_id")
-@dp.callback_query_handler(MatchesCb.filter(action=["yes", "no"]), state="*")
-async def mark_answer(call: types.CallbackQuery, callback_data: dict):
-    cat_id = callback_data["cat_id"]
-    await call.message.answer(text=cat_id, reply_markup=types.ReplyKeyboardRemove())
 
-@dp.callback_query_handler(MatchesCb.filter(action=["back"]))
-async def start(call: types.CallbackQuery, state: FSMContext):
-    await state.reset_state(with_data=False)
-
-    keyboard = get_main_menu_kb()
-    await call.message.answer(
-        text='Hi',
-        reply_markup=keyboard,
-    )
+# @dp.callback_query_handler(MatchesCb.filter(action=["yes", "no"]), state="*")
+# async def mark_answer(call: types.CallbackQuery, callback_data: dict):
+#     cat_id = callback_data["cat_id"]
+#     await call.message.answer(text=cat_id, reply_markup=types.ReplyKeyboardRemove())
+#
+# @dp.callback_query_handler(MatchesCb.filter(action=["back"]))
+# async def start(call: types.CallbackQuery, state: FSMContext):
+#     await state.reset_state(with_data=False)
+#
+#     keyboard = get_main_menu_kb()
+#     await call.message.answer(
+#         text='Hi',
+#         reply_markup=keyboard,
+#     )
 
 
 
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
-    # keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    # buttons = []
-    # buttons.append(types.KeyboardButton(text="I saw a cat"))
-    # buttons.append(types.KeyboardButton(text="I lost my cat"))
-    # # buttons.append(types.KeyboardButton(text="My subscriptions"))
-    # # buttons.append(types.KeyboardButton(text="My matches"))
-    # keyboard.add(*buttons)
     keyboard = get_main_menu_kb()
     await message.answer(
         text='Hi',
@@ -91,14 +93,14 @@ async def start(message: types.Message, state: FSMContext):
     )
 
 
-@dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
-async def lost_cat(message: types.Message, state: FSMContext):
-    await message.answer(
-        "Please upload photo of your cat", reply_markup=types.ReplyKeyboardRemove()
-    )
-
-    await state.set_state(RStates.find)
-    await state.update_data(kafka_topic="find_cat")
+# @dp.message_handler(Text(equals="I lost my cat", ignore_case=True))
+# async def lost_cat(message: types.Message, state: FSMContext):
+#     await message.answer(
+#         "Please upload photo of your cat", reply_markup=types.ReplyKeyboardRemove()
+#     )
+#
+#     await state.set_state(RStates.find)
+#     await state.update_data(kafka_topic="find_cat")
 
 
 @dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
@@ -115,7 +117,7 @@ async def save_to_s3(message):
     os.makedirs(bot_config.image_dir, exist_ok=True)
     image_path = os.path.join(bot_config.image_dir, image_name)
     await message.photo[-1].download(image_path)
-    s3_path = s3_client.save_image(image_path)
+    s3_path = user_profile.s3_client.save_image(image_path)
     os.remove(image_path)
     return s3_path
 
@@ -235,10 +237,6 @@ async def show_matches(message: types.Message, state: FSMContext):
 async def show_matches(message: types.Message, state: FSMContext):
     await message.answer(f'You value is ')
 
-@dp.message_handler(content_types=[ContentType.ANY])
-async def dice_value(message):
-  value = message.html_text
-  await message.answer(value)
 
 def get_kafka_message(_cat_data):
     kafka_message = {

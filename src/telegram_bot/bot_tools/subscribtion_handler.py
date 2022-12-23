@@ -17,7 +17,7 @@ s3_client = YandexS3Client(
     bot_config.s3_client_config.aws_secret_access_key,
 )
 
-user_profile = UserProfileClient(bot_config.mongoDB_url)
+user_profile = UserProfileClient(bot_config)
 
 UnsubscribeCb = CallbackData("fabnum", "action", "cat_id")
 
