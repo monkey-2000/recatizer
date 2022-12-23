@@ -53,6 +53,13 @@ async def set_commands(bot: Bot):
 # @dp.callback_query_handler(ReturnCb.filter(action=["return"]))
 
 # TODO fix case with compress image
+
+MatchesCb = CallbackData("matches", "action", "cat_id")
+@dp.callback_query_handler(MatchesCb.filter(action=["yes", "no"]), state="*")
+async def mark_answer(call: types.CallbackQuery, callback_data: dict):
+    cat_id = callback_data["cat_id"]
+    await call.message.answer(text=cat_id, reply_markup=types.ReplyKeyboardRemove())
+
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
