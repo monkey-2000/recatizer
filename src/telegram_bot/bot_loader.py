@@ -109,7 +109,6 @@ class DataUploader:
                     text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", cat_id=cat._id)
                 ),
 
-
             ]
             keyboard = types.InlineKeyboardMarkup(row_width=3)
             keyboard.add(*buttons)
