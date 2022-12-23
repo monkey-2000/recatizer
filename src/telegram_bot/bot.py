@@ -11,6 +11,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import BotCommand, Dice, ContentType
 from aiogram.utils.callback_data import CallbackData
 
+from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
 from src.telegram_bot.bot_tools.matches_handler import register_add_links_handlers
 from src.telegram_bot.bot_tools.subscribtion_handler import (
     register_subscribtion_handlers,
@@ -23,6 +24,7 @@ from src.utils.s3_client import YandexS3Client
 
 
 MatchesCb = CallbackData("matches", "action", "cat_id")
+
 storage = MemoryStorage()
 kafka_producer = Producer()
 
@@ -60,16 +62,29 @@ async def mark_answer(call: types.CallbackQuery, callback_data: dict):
     cat_id = callback_data["cat_id"]
     await call.message.answer(text=cat_id, reply_markup=types.ReplyKeyboardRemove())
 
+@dp.callback_query_handler(MatchesCb.filter(action=["back"]))
+async def start(call: types.CallbackQuery, state: FSMContext):
+    await state.reset_state(with_data=False)
+
+    keyboard = get_main_menu_kb()
+    await call.message.answer(
+        text='Hi',
+        reply_markup=keyboard,
+    )
+
+
+
 @dp.message_handler(commands=["start"], state="*")
 async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    buttons = []
-    buttons.append(types.KeyboardButton(text="I saw a cat"))
-    buttons.append(types.KeyboardButton(text="I lost my cat"))
-    # buttons.append(types.KeyboardButton(text="My subscriptions"))
-    # buttons.append(types.KeyboardButton(text="My matches"))
-    keyboard.add(*buttons)
+    # keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    # buttons = []
+    # buttons.append(types.KeyboardButton(text="I saw a cat"))
+    # buttons.append(types.KeyboardButton(text="I lost my cat"))
+    # # buttons.append(types.KeyboardButton(text="My subscriptions"))
+    # # buttons.append(types.KeyboardButton(text="My matches"))
+    # keyboard.add(*buttons)
+    keyboard = get_main_menu_kb()
     await message.answer(
         text='Hi',
         reply_markup=keyboard,

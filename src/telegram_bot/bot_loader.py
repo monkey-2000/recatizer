@@ -94,7 +94,7 @@ class DataUploader:
 
 
     async def _send_match(self, chat_id, cat):
-            cat._id = 1
+
             buttons = [
                 types.InlineKeyboardButton(
                     text="\U0000274c", callback_data=self.MatchesCb.new(action="no", cat_id=cat._id)
