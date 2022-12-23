@@ -3,6 +3,7 @@ import os
 import uuid
 from time import sleep, time
 
+import aiohttp
 import cv2
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InputMediaPhoto, InputMediaDocument, InputFile
@@ -35,6 +36,7 @@ class DataUploader:
         self.s3_client = YandexS3Client(
             s3_config.aws_access_key_id, s3_config.aws_secret_access_key
         )
+        self.token=token
         self.image_dir=image_dir
 
 
@@ -92,15 +94,24 @@ class DataUploader:
 
 
     async def _send_match(self, chat_id, cat):
+            cat._id = 1
             buttons = [
                 types.InlineKeyboardButton(
-                    text="MyCat", callback_data=self.MatchesCb.new(action="yes", cat_id="1")
+                    text="\U0000274c", callback_data=self.MatchesCb.new(action="no", cat_id=cat._id)
                 ),
                 types.InlineKeyboardButton(
-                    text="NotMyCat", callback_data=self.MatchesCb.new(action="no", cat_id="1")
-                )
+                    text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", cat_id=cat._id)
+                ),
+                types.InlineKeyboardButton(
+                    text="\U00002b05", callback_data=self.MatchesCb.new(action="back", cat_id=cat._id)
+                ),
+                types.InlineKeyboardButton(
+                    text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", cat_id=cat._id)
+                ),
+
+
             ]
-            keyboard = types.InlineKeyboardMarkup(row_width=1)
+            keyboard = types.InlineKeyboardMarkup(row_width=3)
             keyboard.add(*buttons)
 
 
@@ -115,33 +126,39 @@ class DataUploader:
                 image_name = "{0}.jpg".format(str(uuid.uuid4()))
                 image_path = os.path.join(self.image_dir, image_name)
                 cv2.imwrite(image_path, cat_image)
+                media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path) ))
+                # TODO resize photo
 
-                # cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-                # cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-                # a = InputMediaPhoto(types.InputMediaPhoto(types.InputFile(cat_image_bytes)))
-                media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
-                # media_group.attach_photo(photo=image_path, caption='Превосходная фотография')
-               # media_group.append(InputMediaDocument(media=cat_image_bytes))
             os.remove(image_path)
-            # await self.bot.send_location(chatid, lat, lon)
-            # await self.bot.send_media_group(chat_id=chat_id, media=media_group)
+            if cat.quadkey != "no_quad":
+                    titlat = mercantile.quadkey_to_tile(cat.quadkey)
+                    coo = mercantile.ul(titlat)
+                    await self.bot.send_location(chat_id=chat_id, latitude=coo.lat, longitude=coo.lng)
+            await self.bot.send_media_group(chat_id=chat_id, media=media_group)
             await  self.bot.send_message(
                 chat_id=chat_id, text=cat.additional_info, reply_markup=keyboard)
     #
     #
     #
     #
-    def upload_in_loop(self, closest: ClosestCats):
-
-        loop = asyncio.get_event_loop()
+    async def _send_matches(self, cats, chat_id):
+        bot = Bot(token=self.token)
+        # async with bot.session:  # or `bot.context()`
+        #     for cat in cats:
+        #         await self._send_match(cat=cat, chat_id=chat_id)
         try:
-            loop.run_until_complete(asyncio.wait([self._send_match(chat_id=closest.person.chat_id,
-                                                 cat=closest.cats[0])]))
-            loop.close()
-            # передайте точку входа
+            for cat in cats:
+
+                await self._send_match(cat=cat, chat_id=chat_id)
+
         finally:
-            # действия на выходе, если требуются
-            pass
+            await (await bot.get_session()).close()
+
+
+    def upload(self, closest: ClosestCats):
+        asyncio.run(self._send_matches(cats=closest.cats,
+                                        chat_id=closest.person.chat_id))
+
 
 
 
@@ -196,6 +213,19 @@ if __name__ == "__main__":
             person_name="BORRIZ",
             dt=time()
         )
+
+    cat2 = Cat(
+        _id=None,
+        paths=["users_data/c7c8b97c0e53983d8a0fd3bc2a53222bec4194454adcf3fe145a8dae5b950a19.jpg"],
+        quadkey="0313102310",
+        embeddings=None,
+        is_active=True,
+        additional_info="I miss",
+        chat_id=450390623,
+        person_name="BORRIZ",
+        dt=time()
+    )
+
     person = Person( _id=None,
                     paths=["users_data/c7c8b97c0e53983d8a0fd3bc2a53222bec4194454adcf3fe145a8dae5b950a19.jpg"],
                     quadkey="no",
@@ -206,10 +236,10 @@ if __name__ == "__main__":
                     dt=-float('inf'))
     cl = ClosestCats(
         person = person,
-        cats=[cat1],
+        cats=[cat1, cat2],
         distances = [1.0])
 
     # bot_loader.upload_one(cl)
-    bot_loader.upload_in_loop(cl)
+    bot_loader.upload(cl)
 
 

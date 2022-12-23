@@ -84,8 +84,8 @@ class CatsService(CatsServiceBase):
                     self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
                    # self.bot_loader.match_notify(cl)
-                   #  self.bot_loader.upload(cl)
-                    self.bot_loader.upload_one(cl)
+                    self.bot_loader.upload(cl)
+                   #  self.bot_loader.upload_one(cl)
 
 
 

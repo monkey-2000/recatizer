@@ -33,7 +33,7 @@ class MsgConsumer:
         self.consumer = KafkaConsumer(
             auto_offset_reset="latest",#"earlest",  # "latest",
             enable_auto_commit=True,
-            bootstrap_servers=config.kafka_broker_ip,
+            bootstrap_servers=default_service_config.kafka_broker_ip,
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode("ascii")),
             key_deserializer=lambda v: json.loads(v.decode("ascii")),
