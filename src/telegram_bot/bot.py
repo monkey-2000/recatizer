@@ -11,13 +11,14 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import BotCommand, Dice, ContentType
 from aiogram.utils.callback_data import CallbackData
 
-from src.services.user_profile_service import UserProfileClient
+
 from src.telegram_bot.bot_tools.find_cat_handler import register_find_cat_handlers
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
 from src.telegram_bot.bot_tools.main_menu_text import start_menu_text, saw_lost_menu_text
 from src.telegram_bot.bot_tools.match_callbacks import register_match_handlers
 
 from src.telegram_bot.bot_tools.states import RStates
+from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
 
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer

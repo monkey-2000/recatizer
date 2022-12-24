@@ -22,9 +22,8 @@ from dotenv import load_dotenv
 from src.configs.service_config import default_service_config
 from src.entities.cat import ClosestCats, Cat
 from src.entities.person import Person
-from src.services.user_profile_service import UserProfileClient
 from src.telegram_bot.bot_tools.find_cat_handler import get_find_menu_kb
-from src.telegram_bot.bot_tools.match_sender import MatchSender
+
 
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
 from src.utils.s3_client import YandexS3Client

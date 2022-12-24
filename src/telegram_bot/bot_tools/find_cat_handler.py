@@ -3,10 +3,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.utils.callback_data import CallbackData
 
-from src.services.user_profile_service import UserProfileClient
+
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
 from src.telegram_bot.bot_tools.main_menu_text import start_menu_text
 from src.telegram_bot.bot_tools.states import RStates
+from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
 from src.telegram_bot.configs.bot_cfgs import bot_config
 
 user_profile = UserProfileClient(bot_config)
@@ -39,15 +40,19 @@ async def show_last_matches(message):
     matches = user_profile.answers_db.find(query)
     if len(matches) > bot_config.max_sending_cats:
         await message.answer(
-            "You have many matches. mark these and then we will send you new ones"
+            "You have many matches. Mark these and then we will send you new ones"
         )
         matches = matches[:bot_config.max_sending_cats]
-    for match in matches:
-        query = {"_id": match.match_cat_id, "is_active": True}
-        cat = user_profile.cats_db.find(query)
-        await user_profile.send_match(message, *cat, match._id)
-    await message.answer(text="You are already looking for.",
-                         reply_markup=get_find_menu_kb())
+    if len(matches) == 0:
+        await message.answer(text="You dont have match yet.",
+                             reply_markup=get_find_menu_kb())
+    else:
+        for match in matches:
+            query = {"_id": match.match_cat_id, "is_active": True}
+            cat = user_profile.cats_db.find(query)
+            await user_profile.send_match(message, *cat, match._id)
+        await message.answer(text="You are already looking for.",
+                             reply_markup=get_find_menu_kb())
 
 
 

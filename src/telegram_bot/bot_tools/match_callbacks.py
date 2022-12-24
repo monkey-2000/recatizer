@@ -1,11 +1,10 @@
 from aiogram import types, Dispatcher
-from aiogram.dispatcher import FSMContext
 from aiogram.utils.callback_data import CallbackData
 from bson import ObjectId
 
-from src.services.user_profile_service import UserProfileClient
-from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
-from src.telegram_bot.bot_tools.main_menu_text import start_menu_text
+
+
+from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
 from src.telegram_bot.configs.bot_cfgs import bot_config
 
 user_profile = UserProfileClient(bot_config)
