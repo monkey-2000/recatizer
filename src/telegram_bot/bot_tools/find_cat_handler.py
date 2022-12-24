@@ -15,16 +15,51 @@ FindCb = CallbackData("matches", "action")
 async def lost_cat(message: types.Message, state: FSMContext):
     query = {"chat_id": message.from_user.id, "is_active": True}
     cats = user_profile.people_db.find(query)
-    await state.set_state(RStates.find)
     if len(cats) > 0:
-        await message.answer("You are already looking for. What do You want?",
-                             reply_markup=get_find_kb())
+        await message.answer("You are already looking for. What do You want?")
+        await show_last_matches(message)
     else:
+        await state.set_state(RStates.find)
         await message.answer(
             "Please upload photo of your cat", reply_markup=types.ReplyKeyboardRemove()
         )
 
         await state.update_data(kafka_topic="find_cat")
+
+
+
+async def show_last_matches(message):
+    # await state.reset_state(with_data=False)
+
+    query = {"chat_id": message.from_user.id, "is_active": True}
+    wanted_cat = user_profile.people_db.find(query)
+    query = {"wanted_cat_id": wanted_cat[0]._id, "user_answer": -1}
+    matches = user_profile.answers_db.find(query)
+    if len(matches) > bot_config.max_sending_cats:
+        await message.answer(
+            "You have many matches. mark these and then we will send you new ones"
+        )
+        matches = matches[:bot_config.max_sending_cats]
+    for match in matches:
+        query = {"_id": match.match_cat_id, "is_active": True}
+        cat = user_profile.cats_db.find(query)
+        await user_profile.send_match(message, *cat, match._id)
+    await message.answer(text="You are already looking for.",
+                         reply_markup=get_find_menu_kb())
+
+
+
+def get_find_menu_kb():
+    buttons = [types.InlineKeyboardButton(
+        text="\U00002b05", callback_data=FindCb.new(action="back")
+    ),
+        types.InlineKeyboardButton(
+            text="\U00002705 I find my cat", callback_data=FindCb.new(action="unsubscribe")
+        )]
+
+    keyboard = types.InlineKeyboardMarkup(resize_keyboard=True, row_width=2)
+    keyboard.add(*buttons)
+    return keyboard
 
 
 async def back_to_menu(call: types.CallbackQuery, state: FSMContext):
@@ -36,19 +71,6 @@ async def back_to_menu(call: types.CallbackQuery, state: FSMContext):
     )
     await call.answer()
     # await call.message.delete_message(call.message.chat.id, call.message.message_id)
-
-
-async def show_last_matches(call: types.CallbackQuery, state: FSMContext):
-    # await state.reset_state(with_data=False)
-
-    query = {"chat_id": call.from_user.id, "is_active": True}
-    wanted_cat = user_profile.people_db.find(query)
-    query = {"wanted_cat_id": wanted_cat[0]._id, "user_answer": -1}
-    matches = user_profile.answers_db.find(query)
-    for match in matches:
-        query = {"_id": match.match_cat_id, "is_active": True}
-        cat = user_profile.cats_db.find(query)
-        await user_profile.send_match(call.message, *cat)
 
 
 async def unsubscribe_from_wanted_cat(call: types.CallbackQuery, state: FSMContext):
@@ -69,22 +91,22 @@ async def unsubscribe_from_wanted_cat(call: types.CallbackQuery, state: FSMConte
 
 
 
-def get_find_kb():
-        buttons = [
-            types.InlineKeyboardButton(
-                text="\U00002b05", callback_data=FindCb.new(action="back")
-            ),
-            types.InlineKeyboardButton(
-                text="show \U0001F638\U0001F638\U0001F638", callback_data=FindCb.new(action="show")
-            ),
-            types.InlineKeyboardButton(
-                text="\U00002705 I find my cat", callback_data=FindCb.new(action="unsubscribe")
-            ),
-
-        ]
-        keyboard = types.InlineKeyboardMarkup(row_width=2)
-        keyboard.add(*buttons)
-        return keyboard
+# def get_find_kb():
+#         buttons = [
+#             types.InlineKeyboardButton(
+#                 text="\U00002b05", callback_data=FindCb.new(action="back")
+#             ),
+#             types.InlineKeyboardButton(
+#                 text="show \U0001F638\U0001F638\U0001F638", callback_data=FindCb.new(action="show")
+#             ),
+#             types.InlineKeyboardButton(
+#                 text="\U00002705 I find my cat", callback_data=FindCb.new(action="unsubscribe")
+#             ),
+#
+#         ]
+#         keyboard = types.InlineKeyboardMarkup(row_width=2)
+#         keyboard.add(*buttons)
+#         return keyboard
 
 
 
@@ -94,7 +116,6 @@ def register_find_cat_handlers(dp: Dispatcher):
 
     dp.register_callback_query_handler(
         back_to_menu, FindCb.filter(action=["back"]), state="*")
-    dp.register_callback_query_handler(
-        show_last_matches, FindCb.filter(action=["show"]), state="*")
+
     dp.register_callback_query_handler(
         unsubscribe_from_wanted_cat, FindCb.filter(action=["unsubscribe"]), state="*")

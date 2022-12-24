@@ -26,6 +26,7 @@ def get_callback_kb(cat_id, callback ,action, text):
 
 
 def get_main_menu_kb():
+
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2,  one_time_keyboard=True)
     buttons = []
     buttons.append(types.KeyboardButton(text="I saw a cat"))

@@ -84,6 +84,8 @@ class AnswersMongoClient(MongoClientBase):
         ans = self.answers_collection.insert_one(answer.as_json_wo_none())
         if not ans.acknowledged:
             return None
+        else:
+            return ans.inserted_id
 
 
     def find(self, query: dict):
@@ -105,12 +107,15 @@ class AnswersMongoClient(MongoClientBase):
 
     def add_matches(self, closest_cat: ClosestCats):
         person_id = closest_cat.person._id
+        match_ids = []
         for cat in closest_cat.cats:
             answer = Answer(_id=None,
                        wanted_cat_id=person_id,
                        match_cat_id=cat._id,
                        user_answer=-1)
-            self.save(answer)
+            match_id = self.save(answer)
+            match_ids.append(match_id)
+        return match_ids
     def delete(self, query: dict):
         self.answers_collection.delete_one(query)
 

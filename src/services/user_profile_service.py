@@ -17,7 +17,7 @@ from src.utils.s3_client import YandexS3Client
 
 
 class UserProfileClient():
-    MatchesCb = CallbackData("matches", "action", "cat_id")
+    MatchesCb = CallbackData("matches", "action", "match_id")
     def __init__(self,  config: TgBotConfig):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
@@ -28,8 +28,8 @@ class UserProfileClient():
             config.s3_client_config.aws_access_key_id,
             config.s3_client_config.aws_secret_access_key,
         )
-    async def send_match(self, message, cat):
-        keyboard = self.get_match_kb(cat)
+    async def send_match(self, message, cat, match_id):
+        keyboard = self.get_match_kb(match_id)
 
         os.makedirs(self.image_dir, exist_ok=True)
         media_group = types.MediaGroup()
@@ -50,23 +50,20 @@ class UserProfileClient():
         await  message.answer(text=cat.additional_info, reply_markup=keyboard)
 
 
-    def get_match_kb(self, cat):
+
+
+
+    def get_match_kb(self, match_id):
         buttons = [
             types.InlineKeyboardButton(
-                text="\U0000274c", callback_data=self.MatchesCb.new(action="no", cat_id=cat._id)
+                text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
             ),
             types.InlineKeyboardButton(
-                text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", cat_id=cat._id)
-            ),
-            types.InlineKeyboardButton(
-                text="\U00002b05", callback_data=self.MatchesCb.new(action="back", cat_id=cat._id)
-            ),
-            types.InlineKeyboardButton(
-                text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", cat_id=cat._id)
+                text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
             ),
 
         ]
-        keyboard = types.InlineKeyboardMarkup(row_width=3)
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(*buttons)
         return keyboard
 #     def find_all_user_cats(self, chat_id: int):

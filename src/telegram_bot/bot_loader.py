@@ -30,7 +30,7 @@ from src.utils.s3_client import YandexS3Client
 
 class DataUploader:
 
-    MatchesCb = CallbackData("matches", "action", "cat_id")
+    MatchesCb = CallbackData("matches", "action", "match_id")
     def __init__(self, token, s3_config: S3ClientConfig, image_dir='/tmp'):
         self.bot = Bot(token)
         self.s3_client = YandexS3Client(
@@ -93,20 +93,20 @@ class DataUploader:
     #     )
 
 
-    async def _send_match(self, chat_id, cat):
+    async def _send_match(self, chat_id, match_id, cat):
 
             buttons = [
                 types.InlineKeyboardButton(
-                    text="\U0000274c", callback_data=self.MatchesCb.new(action="no", cat_id=cat._id)
+                    text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
                 ),
                 types.InlineKeyboardButton(
-                    text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", cat_id=cat._id)
+                    text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
                 ),
                 types.InlineKeyboardButton(
-                    text="\U00002b05", callback_data=self.MatchesCb.new(action="back", cat_id=cat._id)
+                    text="\U00002b05", callback_data=self.MatchesCb.new(action="back", match_id=match_id)
                 ),
                 types.InlineKeyboardButton(
-                    text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", cat_id=cat._id)
+                    text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", match_id=match_id)
                 ),
 
             ]
@@ -140,15 +140,15 @@ class DataUploader:
     #
     #
     #
-    async def _send_matches(self, cats, chat_id):
+    async def _send_matches(self, cats, chat_id, match_ids):
         bot = Bot(token=self.token)
         # async with bot.session:  # or `bot.context()`
         #     for cat in cats:
         #         await self._send_match(cat=cat, chat_id=chat_id)
         try:
-            for cat in cats:
+            for match_id, cat in zip(match_ids, cats):
 
-                await self._send_match(cat=cat, chat_id=chat_id)
+                await self._send_match(cat=cat, match_id=match_id, chat_id=chat_id)
 
         finally:
             await (await bot.get_session()).close()
@@ -156,7 +156,8 @@ class DataUploader:
 
     def upload(self, closest: ClosestCats):
         asyncio.run(self._send_matches(cats=closest.cats,
-                                        chat_id=closest.person.chat_id))
+                                        chat_id=closest.person.chat_id,
+                                       match_ids=closest.match_ids))
 
     def _upload(self, cats: list, chat_id: int):
         asyncio.run(self._send_matches(cats=cats,

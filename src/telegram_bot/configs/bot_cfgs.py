@@ -43,4 +43,5 @@ bot_config = TgBotConfig(
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     ),
     mongoDB_url=os.environ.get("MONGO_URL"),
+    max_sending_cats = 5
 )
