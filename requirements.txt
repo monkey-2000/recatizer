@@ -1,8 +1,6 @@
 Sphinx
 coverage
-python-telegram-bot==13.11
 aiogram==2.23.1
-pyTelegramBotAPI
 pymongo
 motor
 kafka-python
@@ -11,4 +9,3 @@ black==22.10.0
 mercantile
 opencv-python
 boto3
-emoji==2.2.0
