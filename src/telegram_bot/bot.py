@@ -146,6 +146,10 @@ async def save_album_to_s3(
     """This handler will receive a complete album of any type."""
 
     s3_paths = []
+    if len(album) > bot_config.max_load_photos:
+        album = album[:bot_config.max_load_photos]
+        await message.answer(
+                    text=f"You uploaded a lot of photos. We have selected the top {bot_config.max_load_photos}")
     for message in album:
         if message.photo:
             s3_path = await save_to_s3(message)

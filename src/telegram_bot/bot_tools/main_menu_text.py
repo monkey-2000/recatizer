@@ -1,3 +1,5 @@
+from src.telegram_bot.configs.bot_cfgs import bot_config
+
 start_menu_text = '~~~~~~~It s Recatizer v0~~~~~~~~~\n' \
                   'You can try to find your lost cat or ' \
                   'help people find theirs cats.\n\n' \
@@ -15,7 +17,7 @@ start_menu_text = '~~~~~~~It s Recatizer v0~~~~~~~~~\n' \
 
 saw_lost_menu_text ='~~~~~~~\n' \
                     "When uploading a new cat:\n" \
-                    "~ Upload from one to 10 photos with \U00002713 Compress images option.\n" \
+                    f"~ Upload from one to {bot_config.max_load_photos} photos with \U00002713 Compress images option.\n" \
                     '~ Send geolocation for better matches.\n' \
                     '~ Fill in additional information. If necessary, leave your contacts.\n\n' \
                     'Please upload photo of cat' \

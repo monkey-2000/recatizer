@@ -38,3 +38,4 @@ class TgBotConfig:
     s3_client_config: S3ClientConfig
     mongoDB_url: str
     max_sending_cats: int
+    max_load_photos: int
