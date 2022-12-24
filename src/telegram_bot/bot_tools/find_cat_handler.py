@@ -116,7 +116,7 @@ async def unsubscribe_from_wanted_cat(call: types.CallbackQuery, state: FSMConte
 
 def register_find_cat_handlers(dp: Dispatcher):
     dp.register_message_handler(
-        lost_cat, Text(equals="I lost my cat", ignore_case=True), state="*")
+        lost_cat, Text(equals="lost cat", ignore_case=True), state="*")
 
     dp.register_callback_query_handler(
         back_to_menu, FindCb.filter(action=["back"]), state="*")

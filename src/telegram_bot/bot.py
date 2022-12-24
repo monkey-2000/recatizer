@@ -14,6 +14,7 @@ from aiogram.utils.callback_data import CallbackData
 from src.services.user_profile_service import UserProfileClient
 from src.telegram_bot.bot_tools.find_cat_handler import register_find_cat_handlers
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
+from src.telegram_bot.bot_tools.main_menu_text import start_menu_text, saw_lost_menu_text
 from src.telegram_bot.bot_tools.match_callbacks import register_match_handlers
 
 from src.telegram_bot.bot_tools.states import RStates
@@ -86,7 +87,7 @@ async def start(message: types.Message, state: FSMContext):
     await state.reset_state(with_data=False)
     keyboard = get_main_menu_kb()
     await message.answer(
-        text='Hi',
+        text=start_menu_text,
         reply_markup=keyboard,
     )
 
@@ -101,10 +102,10 @@ async def start(message: types.Message, state: FSMContext):
 #     await state.update_data(kafka_topic="find_cat")
 
 
-@dp.message_handler(Text(equals="I saw a cat", ignore_case=True))
+@dp.message_handler(Text(equals="saw cat", ignore_case=True))
 async def saw_cat(message: types.Message, state: FSMContext):
-    await message.answer(
-        "Please upload photo of cat", reply_markup=types.ReplyKeyboardRemove()
+    await message.answer(saw_lost_menu_text
+        , reply_markup=types.ReplyKeyboardRemove()
     )
     await state.set_state(RStates.saw)
     await state.update_data(kafka_topic="saw_cat")

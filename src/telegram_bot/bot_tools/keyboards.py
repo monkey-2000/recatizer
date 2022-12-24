@@ -29,8 +29,8 @@ def get_main_menu_kb():
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2,  one_time_keyboard=True)
     buttons = []
-    buttons.append(types.KeyboardButton(text="I saw a cat"))
-    buttons.append(types.KeyboardButton(text="I lost my cat"))
+    buttons.append(types.KeyboardButton(text="SAW CAT"))
+    buttons.append(types.KeyboardButton(text="LOST CAT"))
     # buttons.append(types.KeyboardButton(text="My subscriptions"))
     # buttons.append(types.KeyboardButton(text="My matches"))
     keyboard.add(*buttons)
