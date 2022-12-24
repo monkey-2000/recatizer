@@ -22,6 +22,9 @@ from dotenv import load_dotenv
 from src.configs.service_config import default_service_config
 from src.entities.cat import ClosestCats, Cat
 from src.entities.person import Person
+from src.services.user_profile_service import UserProfileClient
+from src.telegram_bot.bot_tools.find_cat_handler import get_find_menu_kb
+from src.telegram_bot.bot_tools.match_sender import MatchSender
 
 from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
 from src.utils.s3_client import YandexS3Client
@@ -40,80 +43,8 @@ class DataUploader:
         self.image_dir=image_dir
 
 
-    def match_notify(self, closest: ClosestCats):
-        closest_cats_amount = len(closest.cats)
-        if closest_cats_amount == 1:
-            comment = (
-                "Good news! Your cat {0} have {1} match. "
-                "Go to the \my_matches and get contact information "
-                "if your cat is among the matches ".format(
-                    closest.person._id, closest_cats_amount
-                )
-            )
-        else:
-            comment = (
-                "Good news! Your cat {0} have {1} matches. "
-                "Go to the \my_matches and get contact information "
-                "if your cat is among the matches ".format(
-                    closest.person._id, closest_cats_amount
-                )
-            )
-        cat_image = self.s3_client.load_image(closest.person.paths[0])
-        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-        cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-
-        self.bot.send_photo(
-            closest.person.chat_id, photo=cat_image_bytes, caption=comment
-        )
-
-    # def upload_one(self, closest: ClosestCats):
-    #     keyboard = ReplyKeyboardMarkup([[KeyboardButton("/not_may_cat"), KeyboardButton("/mycat")], ["/start", "/I_found_my_cat"]],
-    #                                    one_time_keyboard=True,
-    #                                    resize_keyboard=True)
-    #     keyboard = ReplyKeyboardMarkup(
-    #         [[KeyboardButton("\U0000274c"), KeyboardButton("\U0000274c")], ["\U00002b05", "/I_found_my_cat"]],
-    #         one_time_keyboard=True,
-    #         resize_keyboard=True)
-    #
-    #
-    #     media_group = []
-    #     cat = closest.cats[0]
-    #     for path in cat.paths:
-    #         cat_image = self.s3_client.load_image(path)
-    #         cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-    #         cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-    #         media_group.append(InputMediaPhoto(media=cat_image_bytes))
-    #     if cat.quadkey != "no_quad":
-    #         titlat = mercantile.quadkey_to_tile(cat.quadkey)
-    #         coo = mercantile.ul(titlat)
-    #         self.bot.send_location(chat_id=closest.person.chat_id, latitude=coo.lat, longitude=coo.lng)
-    #     self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
-    #     self.bot.send_message(
-    #         chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
-    #     )
-
 
     async def _send_match(self, chat_id, match_id, cat):
-
-            buttons = [
-                types.InlineKeyboardButton(
-                    text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
-                ),
-                types.InlineKeyboardButton(
-                    text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
-                ),
-                types.InlineKeyboardButton(
-                    text="\U00002b05", callback_data=self.MatchesCb.new(action="back", match_id=match_id)
-                ),
-                types.InlineKeyboardButton(
-                    text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", match_id=match_id)
-                ),
-
-            ]
-            keyboard = types.InlineKeyboardMarkup(row_width=3)
-            keyboard.add(*buttons)
-
-
 
 
 
@@ -122,6 +53,8 @@ class DataUploader:
             for path in cat.paths:
 
                 cat_image = self.s3_client.load_image(path)
+                cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+                # cat_image = cv2.imencode(".jpg", cat_image)[1].tobytes()
                 image_name = "{0}.jpg".format(str(uuid.uuid4()))
                 image_path = os.path.join(self.image_dir, image_name)
                 cv2.imwrite(image_path, cat_image)
@@ -135,23 +68,26 @@ class DataUploader:
                     await self.bot.send_location(chat_id=chat_id, latitude=coo.lat, longitude=coo.lng)
             await self.bot.send_media_group(chat_id=chat_id, media=media_group)
             await  self.bot.send_message(
-                chat_id=chat_id, text=cat.additional_info, reply_markup=keyboard)
-    #
-    #
-    #
-    #
+                chat_id=chat_id, text=cat.additional_info, reply_markup=self.get_match_kb(match_id))
+
+
+
+
     async def _send_matches(self, cats, chat_id, match_ids):
-        bot = Bot(token=self.token)
-        # async with bot.session:  # or `bot.context()`
-        #     for cat in cats:
-        #         await self._send_match(cat=cat, chat_id=chat_id)
+        # bot = Bot(token=self.token)
+
         try:
+            await self.bot.send_message(chat_id=chat_id,
+                                        text="\U0001F638\U0001F638\U0001F638\n YEEAAAH, New matches for you!!!")
             for match_id, cat in zip(match_ids, cats):
 
                 await self._send_match(cat=cat, match_id=match_id, chat_id=chat_id)
 
         finally:
-            await (await bot.get_session()).close()
+            await self.bot.send_message(chat_id=chat_id,
+                                        text="That is all new matches.\n \U0001F638\U0001F638\U0001F638",
+                                        reply_markup=get_find_menu_kb())
+            await (await self.bot.get_session()).close()
 
 
     def upload(self, closest: ClosestCats):
@@ -162,6 +98,20 @@ class DataUploader:
     def _upload(self, cats: list, chat_id: int):
         asyncio.run(self._send_matches(cats=cats,
                                        chat_id=chat_id))
+
+    def get_match_kb(self, match_id):
+        buttons = [
+            types.InlineKeyboardButton(
+                text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
+            ),
+            types.InlineKeyboardButton(
+                text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
+            ),
+
+        ]
+        keyboard = types.InlineKeyboardMarkup(row_width=2)
+        keyboard.add(*buttons)
+        return keyboard
 
 
 

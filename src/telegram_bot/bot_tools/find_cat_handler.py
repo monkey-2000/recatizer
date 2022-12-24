@@ -15,8 +15,10 @@ FindCb = CallbackData("matches", "action")
 async def lost_cat(message: types.Message, state: FSMContext):
     query = {"chat_id": message.from_user.id, "is_active": True}
     cats = user_profile.people_db.find(query)
+
     if len(cats) > 0:
-        await message.answer("You are already looking for. What do You want?")
+        await message.answer("You are already looking for one cat.",
+                             reply_markup=types.ReplyKeyboardRemove())
         await show_last_matches(message)
     else:
         await state.set_state(RStates.find)
@@ -60,6 +62,8 @@ def get_find_menu_kb():
     keyboard = types.InlineKeyboardMarkup(resize_keyboard=True, row_width=2)
     keyboard.add(*buttons)
     return keyboard
+
+
 
 
 async def back_to_menu(call: types.CallbackQuery, state: FSMContext):

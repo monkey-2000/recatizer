@@ -17,9 +17,7 @@ from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
 from src.telegram_bot.bot_tools.match_callbacks import register_match_handlers
 
 from src.telegram_bot.bot_tools.states import RStates
-from src.telegram_bot.bot_tools.subscribtion_handler import (
-    register_subscribtion_handlers,
-)
+
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.cats_queue.producer import Producer
 from src.telegram_bot.middleware import AlbumMiddleware
