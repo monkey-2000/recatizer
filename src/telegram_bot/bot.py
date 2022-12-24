@@ -184,7 +184,7 @@ async def get_extra_info_and_send(message: types.Message, state: FSMContext):
     reply = "Would you like to share your location?"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
-    buttons.append(types.KeyboardButton("Yes", request_location=True))
+    buttons.append(types.KeyboardButton(text="Yes", request_location=True))
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     await message.answer(reply, reply_markup=keyboard)
@@ -199,7 +199,6 @@ async def handle_location(message: types.Message, state: FSMContext):
     cat_data = await state.get_data()
     cat_data["quadkey"] = quadkey
     cat_data["cat_id"] = str(uuid.uuid4())
-    storage.update_data(cat_data)
     is_sent = await send_msgs_to_model(cat_data)
     if not is_sent:
         await message.answer(
