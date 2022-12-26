@@ -30,6 +30,7 @@ from src.utils.s3_client import YandexS3Client
 
 
 
+
 class DataUploader:
 
     MatchesCb = CallbackData("matches", "action", "match_id")
@@ -45,29 +46,32 @@ class DataUploader:
 
     async def _send_match(self, chat_id, match_id, cat):
 
+        if len(cat.paths) > 1 or cat.additional_info != "no info":
+            more_info = True
+
+        os.makedirs(self.image_dir, exist_ok=True)
+        media_group = types.MediaGroup()
+
+        path = cat.paths[0]  # TODO choose best photo
+        cat_image = self.s3_client.load_image(path)
+        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
 
 
-            os.makedirs(self.image_dir, exist_ok=True)
-            media_group = types.MediaGroup()
-            for path in cat.paths:
-
-                cat_image = self.s3_client.load_image(path)
-                cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
                 # cat_image = cv2.imencode(".jpg", cat_image)[1].tobytes()
-                image_name = "{0}.jpg".format(str(uuid.uuid4()))
-                image_path = os.path.join(self.image_dir, image_name)
-                cv2.imwrite(image_path, cat_image)
-                media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path) ))
+        image_name = "{0}.jpg".format(str(uuid.uuid4()))
+        image_path = os.path.join(self.image_dir, image_name)
+        cv2.imwrite(image_path, cat_image)
+        media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path) ))
                 # TODO resize photo
 
-            os.remove(image_path)
-            if cat.quadkey != "no_quad":
-                    titlat = mercantile.quadkey_to_tile(cat.quadkey)
-                    coo = mercantile.ul(titlat)
-                    await self.bot.send_location(chat_id=chat_id, latitude=coo.lat, longitude=coo.lng)
-            await self.bot.send_media_group(chat_id=chat_id, media=media_group)
-            await  self.bot.send_message(
-                chat_id=chat_id, text=cat.additional_info, reply_markup=self.get_match_kb(match_id))
+        os.remove(image_path)
+        if cat.quadkey != "no_quad":
+                titlat = mercantile.quadkey_to_tile(cat.quadkey)
+                coo = mercantile.ul(titlat)
+                await self.bot.send_location(chat_id=chat_id, latitude=coo.lat, longitude=coo.lng)
+        await self.bot.send_media_group(chat_id=chat_id, media=media_group)
+        await  self.bot.send_message(
+            chat_id=chat_id, text="This is your cat?", reply_markup=self.get_match_kb(match_id, more_info=more_info))
 
 
 
@@ -98,51 +102,24 @@ class DataUploader:
         asyncio.run(self._send_matches(cats=cats,
                                        chat_id=chat_id))
 
-    def get_match_kb(self, match_id):
+    def get_match_kb(self, match_id, more_info=False):
+
         buttons = [
             types.InlineKeyboardButton(
                 text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
             ),
             types.InlineKeyboardButton(
-                text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
-            ),
-
+                text="\U00002705", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
+            )
         ]
+        if more_info:
+            buttons.append(types.InlineKeyboardButton(
+                text="More", callback_data=self.MatchesCb.new(action="show_more_info", match_id=match_id)
+            ))
+
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(*buttons)
         return keyboard
-
-
-
-    # def upload(self, closest: ClosestCats):
-    #
-    #     closest_cats_amount = len(closest.cats)
-    #
-    #     for cat_num, cat in enumerate(closest.cats):
-    #
-    #
-    #         media_group = []
-    #         for path in cat.paths:
-    #
-    #             cat_image = self.s3_client.load_image(path)
-    #             cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-    #             cat_image_bytes = cv2.imencode(".jpg", cat_image)[1].tobytes()
-    #             #media_group.append(InputMediaPhoto(media=cat_image_bytes))
-    #             media_group.append(InputMediaDocument(media=cat_image_bytes))
-    #
-    #
-    #         self.bot.send_message(
-    #             chat_id=closest.person.chat_id,
-    #             text="-------cat {}-------".format(cat._id),
-    #         )
-    #         self.bot.send_media_group(chat_id=closest.person.chat_id, media=media_group)
-    #         self.bot.send_message(
-    #             chat_id=closest.person.chat_id, text=cat.additional_info, reply_markup=keyboard
-    #         )
-    #
-    #         self.bot.send_message(
-    #             chat_id=closest.person.chat_id, text="--------------------"
-    #         )
 
 
 if __name__ == "__main__":

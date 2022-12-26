@@ -23,16 +23,15 @@ class MatchSender():
     def __init__(self, image_dir):
         self.image_dir = image_dir
 
-    async def send_match(self, message, cat, cat_images, match_id):
-        keyboard = self.get_match_kb(match_id)
+    async def send_match(self, message, cat, cat_image, match_id, more_info=False):
 
         os.makedirs(self.image_dir, exist_ok=True)
         media_group = types.MediaGroup()
-        for cat_image in cat_images:
-            image_name = "{0}.jpg".format(str(uuid.uuid4()))
-            image_path = os.path.join(self.image_dir, image_name)
-            cv2.imwrite(image_path, cat_image)
-            media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
+
+        image_name = "{0}.jpg".format(str(uuid.uuid4()))
+        image_path = os.path.join(self.image_dir, image_name)
+        cv2.imwrite(image_path, cat_image)
+        media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
             # TODO resize photo
 
         os.remove(image_path)
@@ -40,20 +39,28 @@ class MatchSender():
             titlat = mercantile.quadkey_to_tile(cat.quadkey)
             coo = mercantile.ul(titlat)
             await message.answer_location(latitude=coo.lat, longitude=coo.lng)
-        await message.answer_media_group( media=media_group)
-        await message.answer(text=cat.additional_info, reply_markup=keyboard)
+        await message.answer_media_group(media=media_group)
+        await message.answer(text="This is your cat?",
+                             reply_markup=self.get_match_kb(match_id,
+                                                            more_info=more_info))
 
 
-    def get_match_kb(self, match_id):
+    def get_match_kb(self, match_id, more_info=False):
+
         buttons = [
             types.InlineKeyboardButton(
                 text="\U0000274c", callback_data=self.MatchesCb.new(action="no", match_id=match_id)
             ),
             types.InlineKeyboardButton(
-                text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
-            ),
-
+                text="\U00002705", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
+            )
         ]
+        if more_info:
+            buttons.append( types.InlineKeyboardButton(
+                text="More", callback_data=self.MatchesCb.new(action="show_more_info", match_id=match_id)
+            ))
+
+
         keyboard = types.InlineKeyboardMarkup(row_width=2)
         keyboard.add(*buttons)
         return keyboard
@@ -73,15 +80,16 @@ class UserProfileClient():
         self.__sender = MatchSender(self.image_dir)
         self.__kafka_producer = Producer()
 
-    async def send_match(self, message: types.Message, cat, match_id):
+    async def send_match(self, message: types.Message, cat, match_id, more_info = False):
 
-        cat_images = []
-        for path in cat.paths:
-            cat_image = self.s3_client.load_image(path)
-            cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
-            # cat_image = cv2.imencode(".jpg", cat_image)[1].tobytes()
-            cat_images.append(cat_image)
-        await self.__sender.send_match(message, cat, cat_images, match_id)
+        if len(cat.paths) > 1 or cat.additional_info != "no info":
+            more_info = True
+
+        path = cat.paths[0] #TODO choose best photo
+        cat_image = self.s3_client.load_image(path)
+        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+
+        await self.__sender.send_match(message, cat, cat_image, match_id, more_info=more_info)
 
     async def save_to_s3(self, message: types.Message):
         image_name = "{0}.jpg".format(str(uuid.uuid4()))
@@ -97,14 +105,6 @@ class UserProfileClient():
         tile = mercantile.tile(lon, lat, zoom)
         return mercantile.quadkey(tile)
 
-    # @staticmethod
-    # async def update_data(state, paths: list, cat_name, person_name, user_id):
-    #
-    #     if person_name == None:
-    #         person_name = "BORIS BRITVA"  ## TODO add name generator service
-    #     await state.update_data(
-    #         s3_paths=paths, cat_name=cat_name, person_name=person_name, user_id=user_id
-    #     )
 
     @staticmethod
     def get_kafka_message(_cat_data: dict):

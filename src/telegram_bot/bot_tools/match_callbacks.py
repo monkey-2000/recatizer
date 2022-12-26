@@ -21,11 +21,18 @@ async def mark_answer(call: types.CallbackQuery, callback_data: dict):
     user_profile.answers_db.update(answer)
     await call.answer(text="We mark your answer!", show_alert=True)
 
-
+async def show_more_about_cat(call: types.CallbackQuery, callback_data: dict):
+    match_id = callback_data["match_id"]
+    await call.answer(text=match_id, show_alert=True)
 def register_match_handlers(dp: Dispatcher):
 
     dp.register_callback_query_handler(
         mark_answer, MatchesCb.filter(action=["yes", "no"]), state="*"
     )
+
+    dp.register_callback_query_handler(
+        show_more_about_cat, MatchesCb.filter(action=["show_more_info"]), state="*"
+    )
+
 
 
