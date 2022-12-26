@@ -43,7 +43,7 @@ class DataUploader:
         self.image_dir = image_dir
 
     async def _send_match(self, chat_id, match_id, cat, more_info=False):
-
+        about = None
         if len(cat.paths) > 1 or cat.additional_info != "no info":
             more_info = True
             if len(cat.paths) > 1 or cat.additional_info != "no info":
@@ -83,8 +83,8 @@ class DataUploader:
             text=f"Person {cat.person_name} saw this cat. This is yours?",
             reply_markup=self.get_match_kb(match_id, more_info=more_info),
         )
-
-        await self.bot.send_message(chat_id=chat_id, text=about)
+        if about:
+            await self.bot.send_message(chat_id=chat_id, text=about)
 
     async def _send_matches(self, cats, chat_id, match_ids):
         # bot = Bot(token=self.token)
