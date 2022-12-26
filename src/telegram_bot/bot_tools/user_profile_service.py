@@ -40,7 +40,7 @@ class MatchSender():
             coo = mercantile.ul(titlat)
             await message.answer_location(latitude=coo.lat, longitude=coo.lng)
         await message.answer_media_group(media=media_group)
-        await message.answer(text="This is your cat?",
+        await message.answer(text=f"Person {cat.person_name} saw this cat. This is yours?",
                              reply_markup=self.get_match_kb(match_id,
                                                             more_info=more_info))
 

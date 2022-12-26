@@ -71,7 +71,7 @@ class DataUploader:
                 await self.bot.send_location(chat_id=chat_id, latitude=coo.lat, longitude=coo.lng)
         await self.bot.send_media_group(chat_id=chat_id, media=media_group)
         await  self.bot.send_message(
-            chat_id=chat_id, text="This is your cat?", reply_markup=self.get_match_kb(match_id, more_info=more_info))
+            chat_id=chat_id, text=f"Person {cat.person_name} saw this cat. This is yours?", reply_markup=self.get_match_kb(match_id, more_info=more_info))
 
 
 
