@@ -25,8 +25,7 @@ class YandexS3Client:
             _hash = hashlib.sha256(f.read()).hexdigest()
         image_name = path.basename(img_path)
         im_format = path.splitext(image_name)[1]
-        return  _hash + im_format
-
+        return _hash + im_format
 
     def save_image(self, image_path: str):
         image_hash_name = self._get_img_hash_name(image_path)

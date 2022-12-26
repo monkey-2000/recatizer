@@ -24,7 +24,7 @@ class ServiceConfig:
 
 default_service_config = ServiceConfig(
     mongoDB_url=os.environ.get("MONGO_URL"),
-    #mongoDB_url="mongodb://localhost:27017/"
+    # mongoDB_url="mongodb://localhost:27017/"
     bot_token=os.environ.get("BOT_TOKEN"),
     kafka_broker_ip=["localhost:9092"],
     s3_client_config=S3ClientConfig(
@@ -34,6 +34,6 @@ default_service_config = ServiceConfig(
     models_path=os.environ.get("MODEL_PATH"),
     local_models_path=os.environ.get("LOCAL_MODEL_PATH"),
     answer_time_delay=30,  ## dely time for bot loader (one cat  in 5 sec)
-    ans_check_frequency=60, ## how often do we check for answers in main _nference_loop
-    cats_in_answer=5
+    ans_check_frequency=60,  ## how often do we check for answers in main _nference_loop
+    cats_in_answer=5,
 )

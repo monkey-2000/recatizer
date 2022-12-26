@@ -5,7 +5,6 @@ from src.entities.base import Entity
 
 @dataclass
 class Person(Entity):
-
     def as_json_wo_none(self):
         return {
             key: value
@@ -24,5 +23,5 @@ class Person(Entity):
             is_active=bson["is_active"],
             additional_info=bson["additional_info"],
             chat_id=bson["chat_id"],
-            dt=bson["dt"]
+            dt=bson["dt"],
         )

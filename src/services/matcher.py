@@ -75,6 +75,7 @@ class CatsMatcher:
                 ans.append(l[idx])
         # [l[idx] for idx in idxs if idx >= 0]
         return ans
+
     # TODO there is an error index out of range
 
     # def __sent_cats_filter(self, stored_cats, D, I, entity):
@@ -104,9 +105,11 @@ class CatsMatcher:
             closest_cats.append(ClosestCats(entity, closest, distances))
 
         return closest_cats
-    def throw_sent_cats(self, person: Entity,cats: List[Cat]):
+
+    def throw_sent_cats(self, person: Entity, cats: List[Cat]):
         # TODO make table with answers. people id - sending cats.
         pass
+
     def _get_embeddings(self, entities: List[Entity]):
         all_embeddings = []
         embeddings_belonging = []
@@ -137,8 +140,6 @@ class CatsMatcher:
 
         return reduced_closest_cats.values()
 
-
-
     def find_n_closest(
         self,
         for_check: List[Entity],
@@ -146,7 +147,7 @@ class CatsMatcher:
         max_n: int = 5,
         thr: float = 1,
     ):
-        #TODO the to config
+        # TODO the to config
         emb_for_check, _ = self._get_embeddings(for_check)
         stored_emb, stored_emb_belonging = self._get_embeddings(stored_cats)
         D, I = self.create_and_search_index(
@@ -157,7 +158,7 @@ class CatsMatcher:
         )
         for person_id, person in enumerate(persons_and_matched_cats):
             person.cats = self.reduce_closest_cats(person.cats)
-            #person.cats = [g[0] for _, g in groupby(person.cats, lambda l: l[0])]
+            # person.cats = [g[0] for _, g in groupby(person.cats, lambda l: l[0])]
             persons_and_matched_cats[person_id] = person
         res = list(self.filter_by_thr(persons_and_matched_cats, thr))
         return res

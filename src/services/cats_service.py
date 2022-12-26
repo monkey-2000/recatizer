@@ -12,12 +12,14 @@ from src.configs.service_config import ServiceConfig, default_service_config
 from src.entities.cat import Cat, ClosestCats
 from src.entities.person import Person
 from src.services.matcher import CatsMatcher, Predictor
-from src.services.mongo_service import CatsMongoClient, PeopleMongoClient, AnswersMongoClient
+from src.services.mongo_service import (
+    CatsMongoClient,
+    PeopleMongoClient,
+    AnswersMongoClient,
+)
 
 
 class CatsService(CatsServiceBase):
-
-
     def __init__(self, config: ServiceConfig):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
@@ -27,12 +29,11 @@ class CatsService(CatsServiceBase):
         self.predictor = Predictor(
             config.s3_client_config, config.models_path, config.local_models_path
         )
-        self.bot_loader = DataUploader(
-            config.bot_token, config.s3_client_config
-        )
+        self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
         self.answer_time_delay = config.answer_time_delay
         self.cats_in_answer = config.cats_in_answer
-      #  self.cash = CatsCash(config.answer_time_delay)
+
+    #  self.cash = CatsCash(config.answer_time_delay)
 
     def save_new_cat(self, cat: Cat) -> bool:
         cat.embeddings = self.get_embs(cat.paths)
@@ -45,19 +46,14 @@ class CatsService(CatsServiceBase):
         self.recheck_cats_in_search(cat.quadkey)
         return True
 
-    def __get_query(self, qudkeys: list, t_last_aswers=[-float('inf')]):
+    def __get_query(self, qudkeys: list, t_last_aswers=[-float("inf")]):
 
-        query = {"quadkey": {"$in": qudkeys.append('no_quad')}}
-        if 'no_quad' in qudkeys:
+        query = {"quadkey": {"$in": qudkeys.append("no_quad")}}
+        if "no_quad" in qudkeys:
             query = {}
-        query['dt'] = {'$gte': min(t_last_aswers)}
-        query['is_active'] = True
+        query["dt"] = {"$gte": min(t_last_aswers)}
+        query["is_active"] = True
         return query
-
-
-
-
-
 
     def __find_similar_cats(self, people: List[Person]):
         # TODO fix case with none
@@ -67,10 +63,11 @@ class CatsService(CatsServiceBase):
 
         cats = self.cats_db.find(query)
 
-
         if not cats:
             return
-        closest_cats = self.matcher.find_n_closest(people, cats,max_n=self.cats_in_answer)
+        closest_cats = self.matcher.find_n_closest(
+            people, cats, max_n=self.cats_in_answer
+        )
 
         # TODO fix bug and dontsend not active cats
         for cl in closest_cats:
@@ -86,16 +83,15 @@ class CatsService(CatsServiceBase):
                     cl.match_ids = match_ids
                     self.bot_loader.upload(cl)
 
-
-
-
-
-
     def recheck_cats_in_search(self, quadkey: str):
         quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
-        people = self.people_db.find({"quadkey": {"$in": quadkey_query},
-                                      "dt": {"$lte": time() -  self.answer_time_delay},
-                                      "is_active": True})
+        people = self.people_db.find(
+            {
+                "quadkey": {"$in": quadkey_query},
+                "dt": {"$lte": time() - self.answer_time_delay},
+                "is_active": True,
+            }
+        )
         if len(people) == 0:
             return
         self.__find_similar_cats(people)

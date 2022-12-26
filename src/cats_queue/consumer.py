@@ -11,11 +11,11 @@ from src.services.cats_service import CatsService
 from src.configs.service_config import default_service_config
 from src.entities.cat import Cat
 from src.entities.person import Person
+
 # from src.configs.service_config import default_service_config as config
 
 logger = logging.getLogger("chat_bot_logger")
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-
 
 
 class LimitedMultiprocessingPool(mp_pool.Pool):
@@ -31,7 +31,7 @@ class MsgConsumer:
         self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
 
         self.consumer = KafkaConsumer(
-            auto_offset_reset="latest",#"earlest",  # "latest",
+            auto_offset_reset="latest",  # "earlest",  # "latest",
             enable_auto_commit=True,
             bootstrap_servers=default_service_config.kafka_broker_ip,
             consumer_timeout_ms=1000,
@@ -62,7 +62,7 @@ class MsgConsumer:
                     is_active=True,
                     additional_info=message["additional_info"],
                     chat_id=message["user_id"],
-                    dt=-float('inf')
+                    dt=-float("inf"),
                 )
             )
         elif topic == self.SAW_CAT_TOPIC:
@@ -76,10 +76,9 @@ class MsgConsumer:
                     additional_info=message["additional_info"],
                     chat_id=message["user_id"],
                     person_name=message["person_name"],
-                    dt=time()
+                    dt=time(),
                 )
             )
-
 
     def main_loop(self):
         while not self.stop_processing:

@@ -11,7 +11,7 @@ project_dir = os.environ.get("PROJECT_DIR")
 
 tf_efficientnet_b0_config = Config(
     name="tf_efficientnet_b0",
-    image_size=(256 * 2, 256* 2),
+    image_size=(256 * 2, 256 * 2),
     optimizer=OptimizerParams(
         epochs=100,
         lr=3e-4,

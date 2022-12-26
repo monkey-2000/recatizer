@@ -14,15 +14,12 @@ async def start(message: types.Message, state: FSMContext):
     )
 
 
-
 async def help(message: types.Message):
-    await message.answer(
-        text=help_text
-    )
+    await message.answer(text=help_text)
+
 
 def register_commands_handlers(dp: Dispatcher):
 
-
     dp.register_message_handler(start, commands=["start"], state="*")
 
-    dp.register_message_handler(help, commands=['help'], state="*")
+    dp.register_message_handler(help, commands=["help"], state="*")

@@ -12,9 +12,7 @@ class AnswerEntity(abc.ABC):
     user_answer: int
 
 
-
 class Answer(AnswerEntity):
-
     def as_json_wo_none(self):
         return {
             key: value
@@ -29,5 +27,5 @@ class Answer(AnswerEntity):
             _id=bson["_id"],
             wanted_cat_id=bson["wanted_cat_id"],
             match_cat_id=bson["match_cat_id"],
-            user_answer=bson["user_answer"]
+            user_answer=bson["user_answer"],
         )

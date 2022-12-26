@@ -1,8 +1,7 @@
 from aiogram import types
 
 
-
-def get_callback_kb(cat_id, callback ,action, text):
+def get_callback_kb(cat_id, callback, action, text):
 
     buttons = [
         types.InlineKeyboardButton(
@@ -16,7 +15,9 @@ def get_callback_kb(cat_id, callback ,action, text):
 
 def get_main_menu_kb():
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2,  one_time_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True, row_width=2, one_time_keyboard=True
+    )
     buttons = []
     buttons.append(types.KeyboardButton(text="SAW CAT"))
     buttons.append(types.KeyboardButton(text="LOST CAT"))
@@ -50,6 +51,7 @@ def get_share_location_kb():
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     return keyboard
+
 
 def ask_search_new_cat_kb():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)

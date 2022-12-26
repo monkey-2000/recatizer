@@ -11,13 +11,16 @@ from src.services.cats_service import CatsService
 logger = logging.getLogger("chat_bot_logger")
 tl = Timeloop()
 inference = CatsService(config)
+
+
 @tl.job(interval=timedelta(seconds=config.ans_check_frequency))
 def sending_new_answers():
     logger.warning("start sending_new_answers.")
-    inference.recheck_cats_in_search('no_quad')
+    inference.recheck_cats_in_search("no_quad")
+
 
 if __name__ == "__main__":
-    print('start')
+    print("start")
     consumer = MsgConsumer()
 
     tl.start()
@@ -28,7 +31,7 @@ if __name__ == "__main__":
             tl.stop()
             break
 
-#TODO divide it from consumer
+# TODO divide it from consumer
 
 # class InferenceLoop():
 #     tl = Timeloop()
@@ -54,5 +57,3 @@ if __name__ == "__main__":
 #
 #
 # inference = InferenceLoop(default_service_config)
-
-
