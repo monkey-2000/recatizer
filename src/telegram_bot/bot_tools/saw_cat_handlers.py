@@ -2,7 +2,7 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
-from src.telegram_bot.bot_tools.main_menu_text import saw_lost_menu_text
+from src.telegram_bot.bot_tools.menu_texts import saw_lost_menu_text
 from src.telegram_bot.bot_tools.states import RStates
 
 

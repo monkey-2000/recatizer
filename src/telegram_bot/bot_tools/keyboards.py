@@ -1,17 +1,6 @@
 from aiogram import types
 
 
-# def get_callback_kb(wanted_cat_id, match_cat_id, callback ,action, text):
-#
-#     buttons = [
-#         types.InlineKeyboardButton(
-#             text=text, callback_data=callback.new(action=action, wanted_cat_id=wanted_cat_id, match_cat_id=match_cat_id)
-#         ),
-#     ]
-#     keyboard = types.InlineKeyboardMarkup(row_width=1)
-#     keyboard.add(*buttons)
-#     return keyboard
-
 
 def get_callback_kb(cat_id, callback ,action, text):
 
@@ -36,22 +25,18 @@ def get_main_menu_kb():
     keyboard.add(*buttons)
     return keyboard
 
-def get_match_kb():
-    buttons = [
-        types.InlineKeyboardButton(
-            text="\U0000274c", callback_data=self.MatchesCb.new(action="no", cat_id=cat._id)
-        ),
-        types.InlineKeyboardButton(
-            text="My \U0001F638", callback_data=self.MatchesCb.new(action="yes", cat_id=cat._id)
-        ),
-        types.InlineKeyboardButton(
-            text="\U00002b05", callback_data=self.MatchesCb.new(action="back", cat_id=cat._id)
-        ),
-        types.InlineKeyboardButton(
-            text="\U00002705 I find my cat", callback_data=self.MatchesCb.new(action="find", cat_id=cat._id)
-        ),
 
-    ]
-    keyboard = types.InlineKeyboardMarkup(row_width=3)
+def get_extra_info_kb():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton(text="Yes"))
+    buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
-
+    return keyboard
+def get_share_location_kb():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton(text="Yes", request_location=True))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    return keyboard

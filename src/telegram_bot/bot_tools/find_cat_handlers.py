@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 
 
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
-from src.telegram_bot.bot_tools.main_menu_text import start_menu_text
+from src.telegram_bot.bot_tools.menu_texts import start_menu_text
 from src.telegram_bot.bot_tools.states import RStates
 from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
 from src.telegram_bot.configs.bot_cfgs import bot_config

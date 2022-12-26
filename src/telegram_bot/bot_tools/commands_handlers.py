@@ -2,7 +2,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
 from src.telegram_bot.bot_tools.keyboards import get_main_menu_kb
-from src.telegram_bot.bot_tools.main_menu_text import start_menu_text, help_text
+from src.telegram_bot.bot_tools.menu_texts import start_menu_text, help_text
 
 
 async def start(message: types.Message, state: FSMContext):

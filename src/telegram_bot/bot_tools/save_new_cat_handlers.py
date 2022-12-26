@@ -5,14 +5,12 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
-
+from src.telegram_bot.bot_tools.keyboards import get_extra_info_kb, get_share_location_kb
 from src.telegram_bot.bot_tools.states import RStates
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
 
 user_profile = UserProfileClient(bot_config)
-
-
 
 
 async def save_album_to_s3(
@@ -42,7 +40,8 @@ async def save_album_to_s3(
         s3_paths=s3_paths, cat_name=cat_name, person_name=person_name, user_id=message.from_user.id
     )
 
-    await message.answer("Please write some extra info about this cat")
+    await message.answer("Do you want to write additional info?",
+                         reply_markup=get_extra_info_kb())
 
 
 
@@ -52,21 +51,33 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
     person_name = "{0} ({1})".format(
         message.from_user.first_name, message.from_user.username
     )
-    await user_profile.update_data(state, [s3_path], cat_name, person_name, message.from_user.id)
-    await message.answer("Please write some extra info about this cat")
+    if person_name == None:
+        person_name = "BORIS BRITVA"  ## TODO add name generator service
+
+    await state.update_data(
+        s3_paths=[s3_path], cat_name=cat_name, person_name=person_name, user_id=message.from_user.id
+    )
+
+    await message.answer("Do you want to write additional info?",
+                         reply_markup=get_extra_info_kb())
 
 
+async def get_extra_info(message: types.Message, state: FSMContext):
 
-async def get_extra_info_and_send(message: types.Message, state: FSMContext):
-    await state.update_data(additional_info=message.text)
-    reply = "Would you like to share your location?"
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = []
-    buttons.append(types.KeyboardButton(text="Yes", request_location=True))
-    buttons.append(types.KeyboardButton(text="No"))
-    keyboard.add(*buttons)
-    await message.answer(reply, reply_markup=keyboard)
+    if message.text.lower() == 'yes':
+        await message.answer("Please write TEXT MESSAGE about this cat.")
+        await state.update_data(additional_info=message.text)
+    else:
+        await state.update_data(additional_info="no info")
+
+    await message.answer("Would you like to share your location?", reply_markup=get_share_location_kb())
     await state.set_state(RStates.geo)
+
+
+
+
+
+
 
 
 
@@ -117,7 +128,10 @@ def register_save_new_cat_handlers(dp: Dispatcher):
         save_photo_to_s3, content_types=["photo"], state=[RStates.find, RStates.saw])
 
     dp.register_message_handler(
-        get_extra_info_and_send, state=RStates.ask_extra_info, content_types=["text"])
+        get_extra_info, Text(equals=["Yes", "No"], ignore_case=True), state=RStates.ask_extra_info)
+
+    # dp.register_message_handler(
+    #     get_extra_info_and_send, Text(equals=["Yes", "No"], ignore_case=True), state=RStates.ask_extra_info)
 
     dp.register_message_handler(
         handle_location, state=RStates.geo, content_types=["location"])
