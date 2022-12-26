@@ -1,4 +1,4 @@
-
+from bson import ObjectId
 from pymongo import MongoClient
 
 from src.cats_queue.producer import Producer
@@ -23,26 +23,29 @@ class MatchSender():
     def __init__(self, image_dir):
         self.image_dir = image_dir
 
-    async def send_match(self, message, cat, cat_image, match_id, more_info=False):
+    async def send_match(self, message, cat, cat_images: list, match_id, more_info=False, additional=None):
 
         os.makedirs(self.image_dir, exist_ok=True)
         media_group = types.MediaGroup()
+        for cat_image in cat_images:
+            image_name = "{0}.jpg".format(str(uuid.uuid4()))
+            image_path = os.path.join(self.image_dir, image_name)
+            cv2.imwrite(image_path, cat_image)
+            media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
+                # TODO resize photo
 
-        image_name = "{0}.jpg".format(str(uuid.uuid4()))
-        image_path = os.path.join(self.image_dir, image_name)
-        cv2.imwrite(image_path, cat_image)
-        media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
-            # TODO resize photo
-
-        os.remove(image_path)
+            os.remove(image_path)
         if cat.quadkey != "no_quad":
             titlat = mercantile.quadkey_to_tile(cat.quadkey)
             coo = mercantile.ul(titlat)
             await message.answer_location(latitude=coo.lat, longitude=coo.lng)
         await message.answer_media_group(media=media_group)
+
+
         await message.answer(text=f"Person {cat.person_name} saw this cat. This is yours?",
-                             reply_markup=self.get_match_kb(match_id,
-                                                            more_info=more_info))
+                                 reply_markup=self.get_match_kb(match_id,
+                                                                more_info=more_info))
+
 
 
     def get_match_kb(self, match_id, more_info=False):
@@ -55,10 +58,14 @@ class MatchSender():
                 text="\U00002705", callback_data=self.MatchesCb.new(action="yes", match_id=match_id)
             )
         ]
+
         if more_info:
+
             buttons.append( types.InlineKeyboardButton(
                 text="More", callback_data=self.MatchesCb.new(action="show_more_info", match_id=match_id)
             ))
+
+
 
 
         keyboard = types.InlineKeyboardMarkup(row_width=2)
@@ -81,16 +88,40 @@ class UserProfileClient():
         self.__kafka_producer = Producer()
 
     async def send_match(self, message: types.Message, cat, match_id, more_info = False):
-
+        about = None
         if len(cat.paths) > 1 or cat.additional_info != "no info":
             more_info = True
+            about = 'We have some extra info about this cat:\n'
+
+            if cat.additional_info != "no info":
+                about += '-additional info;\n'
+            if len(cat.paths) > 1:
+                about += '-{0} photos\n'.format(len(cat.paths))
+            about += "Press More to see it."
+
+
 
         path = cat.paths[0] #TODO choose best photo
         cat_image = self.s3_client.load_image(path)
         cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
 
-        await self.__sender.send_match(message, cat, cat_image, match_id, more_info=more_info)
+        await self.__sender.send_match(message, cat, [cat_image], match_id, more_info=more_info)
+        if about:
+            await message.answer(text=about)
+    async def send_match_with_extra(self, message: types.Message, match_id: str):
+        answer = self.answers_db.find({'_id': ObjectId(match_id)})[0]
+        cat = self.cats_db.find({'_id': answer.match_cat_id})[0]
+        cat_images = []
+        for path in cat.paths:
+            cat_image = self.s3_client.load_image(path)
+            cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+            cat_images.append(cat_image)
+        if cat.additional_info != "no info":
+            await message.answer(text=f"ADDITIONAL INFO: {cat.additional_info}")
 
+        await self.__sender.send_match(message, cat, cat_images, match_id)
+
+        #
     async def save_to_s3(self, message: types.Message):
         image_name = "{0}.jpg".format(str(uuid.uuid4()))
         os.makedirs(self.image_dir, exist_ok=True)

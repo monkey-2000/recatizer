@@ -29,10 +29,20 @@ def get_main_menu_kb():
 def get_extra_info_kb():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    return keyboard
+
+
+def get_contact_name_kb():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
     buttons.append(types.KeyboardButton(text="Yes"))
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     return keyboard
+
+
 def get_share_location_kb():
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
