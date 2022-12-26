@@ -40,3 +40,11 @@ def get_share_location_kb():
     buttons.append(types.KeyboardButton(text="No"))
     keyboard.add(*buttons)
     return keyboard
+
+def ask_search_new_cat_kb():
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton(text="Yes"))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+    return keyboard

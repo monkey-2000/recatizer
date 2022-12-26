@@ -6,3 +6,6 @@ class RStates(StatesGroup):
     find = State()
     geo = State()
     ask_extra_info = State()
+    wait_extra_info = State()
+
+    ask_search_new_cat = State()

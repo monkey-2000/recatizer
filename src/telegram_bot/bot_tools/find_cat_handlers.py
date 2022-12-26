@@ -51,7 +51,7 @@ async def show_last_matches(message):
             query = {"_id": match.match_cat_id, "is_active": True}
             cat = user_profile.cats_db.find(query)
             await user_profile.send_match(message, *cat, match._id)
-        await message.answer(text="You are already looking for.",
+        await message.answer(text="You are already looking for cat.",
                              reply_markup=get_find_menu_kb())
 
 
@@ -95,6 +95,8 @@ async def unsubscribe_from_wanted_cat(call: types.CallbackQuery, state: FSMConte
     await call.message.answer(text=start_menu_text,
                       reply_markup=get_main_menu_kb())
     await call.answer(text="We deleted your cat!", show_alert=True)
+
+
     # await call.message.delete_message(call.message.chat.id, call.message.message_id)
 
 
