@@ -1,12 +1,11 @@
-import os
 import uuid
 
-import mercantile
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
-from src.cats_queue.producer import Producer
+
 from src.telegram_bot.bot_tools.states import RStates
 from src.telegram_bot.configs.bot_cfgs import bot_config
 from src.telegram_bot.bot_tools.user_profile_service import UserProfileClient
@@ -15,53 +14,7 @@ user_profile = UserProfileClient(bot_config)
 
 
 
-# async def save_to_s3(message):
-#     image_name = "{0}.jpg".format(str(uuid.uuid4()))
-#     os.makedirs(bot_config.image_dir, exist_ok=True)
-#     image_path = os.path.join(bot_config.image_dir, image_name)
-#     await message.photo[-1].download(image_path)
-#     s3_path = user_profile.s3_client.save_image(image_path)
-#     os.remove(image_path)
-#     return s3_path
 
-
-# def point_to_quadkey(lon: float, lat: float, zoom: int = 16) -> str:
-#     tile = mercantile.tile(lon, lat, zoom)
-#     return mercantile.quadkey(tile)
-
-
-# async def update_data(state, paths: list, cat_name, person_name, user_id):
-#
-#     if person_name == None:
-#         person_name = "BORIS BRITVA"  ## TODO add name generator service
-#     await state.update_data(
-#         s3_paths=paths, cat_name=cat_name, person_name=person_name, user_id=user_id
-#     )
-
-# def get_kafka_message(_cat_data):
-#         kafka_message = {
-#             "user_id": _cat_data["user_id"],
-#             "cat_name": _cat_data["cat_name"],
-#             "image_paths": _cat_data["s3_paths"],
-#             "additional_info": _cat_data["additional_info"],
-#             "quadkey": _cat_data["quadkey"],
-#             "person_name": _cat_data["person_name"],
-#         }
-#         return kafka_message
-
-
-# async def send_msgs_to_model(cat_data):
-#     _cat_data = cat_data.copy()
-#     kafka_message = get_kafka_message(_cat_data)
-#     kafka_producer.send(
-#         value=kafka_message,
-#         key=_cat_data["cat_name"],
-#         topic=_cat_data["kafka_topic"],
-#     )
-#
-#     return True
-
-## HANDLERS
 async def save_album_to_s3(
     message: types.Message, album: list, state: FSMContext, cat_name: str
 ):
@@ -83,7 +36,6 @@ async def save_album_to_s3(
         message.from_user.first_name, message.from_user.username
     )
 
-    # await user_profile.update_data(state, s3_paths, cat_name, person_name, message.from_user.id)
     if person_name == None:
         person_name = "BORIS BRITVA"  ## TODO add name generator service
     await state.update_data(

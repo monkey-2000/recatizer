@@ -23,5 +23,9 @@ saw_lost_menu_text ='~~~~~~~\n' \
                     'Please upload photo of cat' \
 
 
+help_text = '~~~~~~~\n' \
+             'help text'
+
+
 
 
