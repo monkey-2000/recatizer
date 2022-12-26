@@ -100,24 +100,6 @@ async def unsubscribe_from_wanted_cat(call: types.CallbackQuery, state: FSMConte
 
 
 
-# def get_find_kb():
-#         buttons = [
-#             types.InlineKeyboardButton(
-#                 text="\U00002b05", callback_data=FindCb.new(action="back")
-#             ),
-#             types.InlineKeyboardButton(
-#                 text="show \U0001F638\U0001F638\U0001F638", callback_data=FindCb.new(action="show")
-#             ),
-#             types.InlineKeyboardButton(
-#                 text="\U00002705 I find my cat", callback_data=FindCb.new(action="unsubscribe")
-#             ),
-#
-#         ]
-#         keyboard = types.InlineKeyboardMarkup(row_width=2)
-#         keyboard.add(*buttons)
-#         return keyboard
-
-
 
 def register_find_cat_handlers(dp: Dispatcher):
     dp.register_message_handler(
