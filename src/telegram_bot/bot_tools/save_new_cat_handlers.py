@@ -8,8 +8,7 @@ from aiogram.dispatcher.filters import Text
 from src.telegram_bot.bot_tools.keyboards import (
     get_extra_info_kb,
     get_share_location_kb,
-    get_main_menu_kb,
-    get_contact_name_kb,
+    get_main_menu_kb
 )
 from src.telegram_bot.bot_tools.states import RStates
 from src.telegram_bot.configs.bot_cfgs import bot_config
@@ -36,7 +35,7 @@ async def save_album_to_s3(
     await state.update_data(
         s3_paths=s3_paths, cat_name=cat_name, user_id=message.from_user.id
     )
-    await ask_about_name_and_tg(message, state)
+    await ask_about_contacts(message, state)
 
 
 async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: str):
@@ -44,21 +43,28 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
     await state.update_data(
         s3_paths=[s3_path], cat_name=cat_name, user_id=message.from_user.id
     )
-    await ask_about_name_and_tg(message, state)
+    await ask_about_contacts(message, state)
 
 
-async def ask_about_name_and_tg(message, state):
+async def ask_about_contacts(message, state):
     await state.set_state(RStates.ask_name_contact)
+
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = []
+    buttons.append(types.KeyboardButton(text="Yes"))
+    buttons.append(types.KeyboardButton(text="No"))
+    keyboard.add(*buttons)
+
     await message.answer(
-        "Do you want to leave your @tg and name? (yes/no)",
-        reply_markup=get_contact_name_kb(),
+        "Do you want to leave your contacts? (yes/no)",
+        reply_markup=keyboard,
     )
 
 
-async def get_name_and_tg(message: types.Message, state: FSMContext):
+async def get_contacts(message: types.Message, state: FSMContext):
     person_name = None
     if message.text.lower() == "yes":
-
+        ## TODO new perosn name here
         person_name = "{0} (tg: @{1})".format(
             message.from_user.first_name, message.from_user.username
         )
@@ -68,7 +74,7 @@ async def get_name_and_tg(message: types.Message, state: FSMContext):
         await state.update_data(person_name=person_name)
         await ask_about_additional_info(message, state)
     else:
-        await ask_about_name_and_tg(message, state)
+        await ask_about_contacts(message, state)
 
 
 async def ask_about_additional_info(message, state):
@@ -157,7 +163,7 @@ def register_save_new_cat_handlers(dp: Dispatcher):
     )
 
     dp.register_message_handler(
-        get_name_and_tg, content_types=["text"], state=RStates.ask_name_contact
+        get_contacts, content_types=["text"], state=RStates.ask_name_contact
     )
 
     dp.register_message_handler(
