@@ -23,8 +23,9 @@ async def mark_answer(call: types.CallbackQuery, callback_data: dict):
 
 async def show_more_about_cat(call: types.CallbackQuery, callback_data: dict):
     match_id = callback_data["match_id"]
+    await call.answer(text="We send you more info.", show_alert=True)
     await user_profile.send_match_with_extra(call.message, match_id)
-    await call.answer()
+
 
 
 def register_match_handlers(dp: Dispatcher):

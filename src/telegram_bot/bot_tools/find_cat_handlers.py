@@ -55,7 +55,7 @@ async def show_last_matches(message):
             cat = user_profile.cats_db.find(query)
             await user_profile.send_match(message, *cat, match._id)
         await message.answer(
-            text="You are already looking for cat.", reply_markup=get_find_menu_kb()
+            text="Please mark your matches.", reply_markup=get_find_menu_kb()
         )
 
 

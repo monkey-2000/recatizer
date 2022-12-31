@@ -92,7 +92,7 @@ class DataUploader:
         try:
             await self.bot.send_message(
                 chat_id=chat_id,
-                text="\U0001F638\U0001F638\U0001F638\n YEEAAAH, New matches for you!!!",
+                text=" YEEAAAH, New matches for you!!!",
             )
             for match_id, cat in zip(match_ids, cats):
 
@@ -101,7 +101,7 @@ class DataUploader:
         finally:
             await self.bot.send_message(
                 chat_id=chat_id,
-                text="That is all new matches.\n \U0001F638\U0001F638\U0001F638",
+                text="That is all new matches.\n",
                 reply_markup=get_find_menu_kb(),
             )
             await (await self.bot.get_session()).close()

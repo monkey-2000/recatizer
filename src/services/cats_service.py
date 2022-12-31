@@ -60,16 +60,15 @@ class CatsService(CatsServiceBase):
         qudkeys = list({person.quadkey for person in people})
         last_aswer_time = list({person.dt for person in people})
         query = self.__get_query(qudkeys, last_aswer_time)
-
         cats = self.cats_db.find(query)
 
         if not cats:
             return
+
         closest_cats = self.matcher.find_n_closest(
             people, cats, max_n=self.cats_in_answer
         )
 
-        # TODO fix bug and dontsend not active cats
         for cl in closest_cats:
 
             # cl = self.throw_sent_cats(cl)

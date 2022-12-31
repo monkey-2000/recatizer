@@ -126,6 +126,14 @@ class UserProfileClient:
             cat_image = self.s3_client.load_image(path)
             cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
             cat_images.append(cat_image)
+
+        media_group = types.MediaGroup()
+        for cat_image in cat_images:
+            image_name = "{0}.jpg".format(str(uuid.uuid4()))
+            image_path = os.path.join(self.image_dir, image_name)
+            cv2.imwrite(image_path, cat_image)
+            media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
+
         if cat.additional_info != "no info":
             await message.answer(text=f"ADDITIONAL INFO: {cat.additional_info}")
 
