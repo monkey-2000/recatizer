@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from dataclasses import dataclass
-from src.telegram_bot.configs.bot_base_configs import S3ClientConfig
+from src.telegram_bot.configs.bot_base_configs import S3ClientConfig, RedisClientConfig
 
 
 load_dotenv()
@@ -15,6 +15,7 @@ class ServiceConfig:
     bot_token: str
     kafka_broker_ip: list
     s3_client_config: S3ClientConfig
+    redis_client_config: RedisClientConfig
     models_path: str
     local_models_path: str
     answer_time_delay: int
@@ -30,6 +31,10 @@ default_service_config = ServiceConfig(
     s3_client_config=S3ClientConfig(
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    ),
+    redis_client_config=RedisClientConfig(host="localhost",
+                                          port=6379,
+                                          db=0
     ),
     models_path=os.environ.get("MODEL_PATH"),
     local_models_path=os.environ.get("LOCAL_MODEL_PATH"),

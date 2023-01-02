@@ -106,12 +106,12 @@ class DataUploader:
             )
             await (await self.bot.get_session()).close()
 
-    def upload(self, closest: ClosestCats):
+    def upload(self, chat_id: int, cats: list, match_ids: list):
         asyncio.run(
             self._send_matches(
-                cats=closest.cats,
-                chat_id=closest.person.chat_id,
-                match_ids=closest.match_ids,
+                cats=cats,
+                chat_id=chat_id,
+                match_ids=match_ids,
             )
         )
 

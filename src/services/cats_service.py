@@ -2,10 +2,11 @@ import logging
 from time import time
 from typing import List
 
-
+import redis
 from pymongo import MongoClient
 
 from src.entities.answer import Answer
+from src.services.redis_service import CacheClient
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
@@ -25,6 +26,9 @@ class CatsService(CatsServiceBase):
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
         self.answers_db = AnswersMongoClient(client.main)
+
+        self.cache = CacheClient(config.redis_client_config)
+
         self.matcher = CatsMatcher()
         self.predictor = Predictor(
             config.s3_client_config, config.models_path, config.local_models_path
@@ -35,7 +39,16 @@ class CatsService(CatsServiceBase):
 
     #  self.cash = CatsCash(config.answer_time_delay)
 
+
+
     def save_new_cat(self, cat: Cat) -> bool:
+
+
+        if self.cache.exists([*cat.paths, *cat.quadkey]):
+            return
+        else:
+            self.cache.set([*cat.paths, *cat.quadkey], None)
+
         cat.embeddings = self.get_embs(cat.paths)
         ans = self.cats_db.save(cat)
         if not ans:
@@ -73,6 +86,7 @@ class CatsService(CatsServiceBase):
 
             # cl = self.throw_sent_cats(cl)
             if len(cl.cats) > 0:
+
                 cl.person.dt = time()
                 cl.cats = self.answers_db.filter_matches(cl.person._id, cl.cats)
                 if cl.cats:
@@ -80,7 +94,12 @@ class CatsService(CatsServiceBase):
                     match_ids = self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
                     cl.match_ids = match_ids
-                    self.bot_loader.upload(cl)
+
+                    self.cache.set(cl.person.paths, {"cats": cl.cats, "match_ids": match_ids})
+                    self.bot_loader.upload(cats=cl.cats,
+                                           chat_id=cl.person.chat_id,
+                                           match_ids=cl.match_ids)
+
 
     def recheck_cats_in_search(self, quadkey: str):
         quadkey_query = [quadkey, "no_quad"] if "no_quad" != quadkey else ["no_quad"]
@@ -101,18 +120,19 @@ class CatsService(CatsServiceBase):
     def get_embs(self, paths):
         embs = []
         for path in paths:
-            # if self.emb_in_cach(path):
-            #     emb = self
             emb = self.predictor.predict(path)
             embs.append(emb.tolist())
         return embs
 
     def add_user(self, person: Person):
-        # TODO load ans from cache
-        # answer = self.cash.check_answer(person)
-        # if answer:
-        #     person.embeddings = answer.embeddings
-        # else:
+
+        if self.cache.exists(person.paths):
+            cached_ans = self.cache.get(person.paths)
+            self.bot_loader.upload(cats=cached_ans["cats"],
+                                   chat_id=person.chat_id,
+                                   match_ids=cached_ans["match_ids"])
+
+
         person.embeddings = self.get_embs(person.paths)
         person = self.people_db.save(person)
 

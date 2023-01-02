@@ -1,5 +1,6 @@
 from bson import ObjectId
 from pymongo import MongoClient
+import redis
 
 from src.cats_queue.producer import Producer
 from src.services.mongo_service import (
@@ -95,6 +96,15 @@ class UserProfileClient:
         self.image_dir = config.image_dir
         self.__sender = MatchSender(self.image_dir)
         self.__kafka_producer = Producer()
+
+        # self.redis_client = self.get_redis_client(host=config.redis_client_config.host,
+        #                                           port=config.redis_client_config.port,
+        #                                           db=config.redis_client_config.db)
+
+    @staticmethod
+    def get_redis_client(host='localhost', port=6379, db=0):
+        pool = redis.ConnectionPool(host=host, port=port, db=db)
+        return redis.Redis(connection_pool=pool)
 
     async def send_match(self, message: types.Message, cat, match_id, more_info=False):
         about = None

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from src.telegram_bot.configs.bot_base_configs import (
     TgBotConfig,
     S3ClientConfig,
-    KafkaConsumerCfg,
+    KafkaConsumerCfg, RedisClientConfig,
 )
 
 load_dotenv()
@@ -42,7 +42,10 @@ bot_config = TgBotConfig(
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     ),
+    redis_client_config = RedisClientConfig(host="localhost",
+                                            port=6379,
+                                            db=0),
     mongoDB_url=os.environ.get("MONGO_URL"),
     max_sending_cats=5,
-    max_load_photos=5,
-)
+    max_load_photos=5)
+

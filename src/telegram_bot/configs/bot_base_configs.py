@@ -31,11 +31,19 @@ class S3ClientConfig:
 
 
 @dataclass
+class RedisClientConfig:
+    host: str
+    port: int
+    db: int
+
+
+@dataclass
 class TgBotConfig:
     token: str
     image_dir: str
     kafka_server: list
     s3_client_config: S3ClientConfig
+    redis_client_config: RedisClientConfig
     mongoDB_url: str
     max_sending_cats: int
     max_load_photos: int
