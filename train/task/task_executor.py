@@ -43,7 +43,7 @@ class TaskRunner:
         self.device = device
         self.test_every = test_every
         self.checkpoint_handler = CheckpointHandler(model_config)
-        self.model = self._init_model(model)
+        self.model, self.start_epoch = self._init_model(model)
         wandb.watch(self.model, criterion, log="all")
         self.model_config = model_config
         self.model.to(self.device)
@@ -60,14 +60,13 @@ class TaskRunner:
         self.metric = torchmetrics.Accuracy()
         self.nb_epoch = optimizer_config.epochs
         self.warmup_epoch = 0
-        self.start_epoch = 0
 
         self.step_mode_schedule = False
         self.model_input_fields = ['image', 'label']
 
     def _init_model(self, model: nn.Module):
-        self.checkpoint_handler.load_checkpoint(model)
-        return model
+        model, checkpoint = self.checkpoint_handler.load_checkpoint(model)
+        return model, checkpoint.get('epoch',0) + 1 if checkpoint else 0
 
     def _create_basic_callbacks(self) -> List[Callback]:
         """

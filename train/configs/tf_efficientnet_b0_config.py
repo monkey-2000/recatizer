@@ -22,7 +22,7 @@ tf_efficientnet_b0_config = Config(
                                  val_path=project_dir +  "/data/processed/val.csv"),
     model_config=ModelConfig(model_name="tf_efficientnet_b0",
                              embedding_size=512, num_classes=509,
-                             path_to_save=os.path.join(os.path.dirname(project_dir), "models"), resume_checkpoint="",
+                             path_to_save=os.path.join(os.path.dirname(project_dir), "models"), resume_checkpoint=os.path.join(os.path.dirname(project_dir), "models/tf_efficientnet_b0_last"),
                              pool_config=PoolConfig(type="gem", params={"p":3, "p_trainable":False}),
                              head_config=HeadConfig(type="adaptive_arcface", params={"m": 0.2, "s": 20.0, "k": 3, "margin_coef_id": 0.27126,
                                                                                      "margin_power_id": -0.364399, "margin_cons_id": 0.05, "init": "uniform"}))

@@ -91,13 +91,13 @@ class WanDBMetricSaver(Callback):
     def on_epoch_end(self, epoch):
         for idx, param_group in enumerate(self.optimizer.param_groups):
             lr = param_group['lr']
-            self.wandb_run.log({"lr": lr})
+            self.wandb_run.log({"lr": lr}, step=epoch)
 
         for k, v in self.metrics_collection.train_metrics.items():
-            self.wandb_run.log({f"train_{k}": v.avg})
+            self.wandb_run.log({f"train_{k}": v.avg}, step=epoch)
 
         for k, v in self.metrics_collection.val_metrics.items():
-            self.wandb_run.log({f"val_{k}": v.avg})
+            self.wandb_run.log({f"val_{k}": v.avg}, step=epoch)
 
 
 
