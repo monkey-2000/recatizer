@@ -18,7 +18,7 @@ class CatsService(CatsServiceBase):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
-        self.matcher = CatsMatcher()
+        self.matcher = CatsMatcher(dim=config.embedding_size)
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
         self.bot_loader = DataUploader(config.bot_token)
 
@@ -26,6 +26,12 @@ class CatsService(CatsServiceBase):
 
     def save_new_cat(self, cat: Cat) -> bool:
         emb = self.predictor.predict(cat.path)
+        if cat.quadkey not in self.matcher.quadkey_index:
+            cats = self.cats_db.find({'quadkey': cat.quadkey})
+            if cats:
+                self.matcher.init_index(cat.quadkey, cats)
+
+        self.matcher.add_items(cat.quadkey, [cat])
         cat.embeddings = emb.tolist()
         ans = self.cats_db.save(cat)
         if not ans:
@@ -36,14 +42,16 @@ class CatsService(CatsServiceBase):
         return True
 
     def __find_similar_cats(self, people: List[Person]):
-        qudkeys = list({person.quadkey for person in people})
-        cats = self.cats_db.find({'quadkey': {"$in": qudkeys}})
-        if not cats:
-            return
-        closest_cats = self.matcher.find_n_closest(people, cats)
-        for cl in closest_cats:
-            if cl.cats:
-                self.bot_loader.upload(cl)
+        quadkeys = set({person.quadkey for person in people})
+        for quadkey in quadkeys:
+
+            cats = self.cats_db.find({'quadkey': quadkey})
+            if cats:
+                self.matcher.init_index(quadkey, cats)
+                closest_cats = self.matcher.find_top_closest(quadkey, people)
+                for cl in closest_cats:
+                    if cl.cats:
+                        self.bot_loader.upload(cl)
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({'quadkey': quadkey})
@@ -58,8 +66,5 @@ class CatsService(CatsServiceBase):
         person = self.people_db.save(person)
         self.__find_similar_cats([person])
 
-if __name__ == '__main__':
-    service = CatsService(default_service_config)
-    service.save_new_cat(Cat(path="recatizer-bucket/users_data/004a9fe6-2820-4273-8a3e-59f67898cee5_0.jpg", additional_info={}, quadkey="", id=None, embeddings=None))
 
 

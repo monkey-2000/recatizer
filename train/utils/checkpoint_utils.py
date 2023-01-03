@@ -42,7 +42,7 @@ class CheckpointHandler:
                       .format(checkpoint_path, checkpoint['epoch']))
             else:
                 model.load_state_dict(checkpoint)
-                return model, checkpoint
+            return model, checkpoint
         else:
             print("=> no checkpoint found at '{}'".format(checkpoint_path))
         return model, None

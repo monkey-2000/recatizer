@@ -15,6 +15,7 @@ class ServiceConfig:
     s3_client_config: S3ClientConfig
     models_path: str
     local_models_path: str
+    embedding_size: int
 
 
 default_service_config = ServiceConfig(
@@ -25,6 +26,7 @@ default_service_config = ServiceConfig(
                     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
                 ),
     models_path=os.environ.get('MODEL_PATH'),
-    local_models_path=os.environ.get('LOCAL_MODEL_PATH')
+    local_models_path=os.environ.get('LOCAL_MODEL_PATH'),
+    embedding_size=512
 )
 
