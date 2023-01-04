@@ -5,7 +5,7 @@ class RStates(StatesGroup):
     saw = State()
     find = State()
     # geo = State()
-    # ask_name_contact = State()
+    # ask_user_info = State()
     # ask_extra_info = State()
     # wait_extra_info = State()
 

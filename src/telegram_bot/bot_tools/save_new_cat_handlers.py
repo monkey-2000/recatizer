@@ -20,7 +20,7 @@ user_profile = UserProfileClient(bot_config)
 ContactCb = CallbackData("user_contact", "action", "field_key")
 class SaveCatStates(StatesGroup):
     geo = State()
-    ask_name_contact = State()
+    ask_user_info = State()
     ask_extra_info = State()
     wait_extra_info = State()
     editing_user_info = State()
@@ -55,7 +55,7 @@ async def save_photo_to_s3(message: types.Message, state: FSMContext, cat_name: 
 
 
 async def ask_about_contacts(message, state):
-    await state.set_state(SaveCatStates.ask_name_contact)
+    await state.set_state(SaveCatStates.ask_user_info)
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = []
@@ -69,27 +69,60 @@ async def ask_about_contacts(message, state):
     )
 
 
-async def get_contacts(message: types.Message, state: FSMContext):
+# async def get_contacts(message: types.Message, state: FSMContext):
+#
+#     if message.text.lower() == "yes":
+#
+#         edit_contact_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+#         edit_contact_kb.add(types.KeyboardButton(text="Send"),
+#                             types.KeyboardButton(text="Edit"))
+#
+#         user_info = {"name": message.from_user.first_name,
+#                      "contacts": f"tg: @{message.from_user.username}"}
+#         await state.update_data(user_info=user_info)
+#         await state.set_state(SaveCatStates.editing_user_info)
+#
+#         await message.answer(
+#             text=f"Your contacts:\n"
+#                  f"name: {message.from_user.first_name},\n"
+#                  f"contacts: tg: @{message.from_user.username}.\n"
+#                  f"Send or edit them? (Send/Edit)",
+#             reply_markup=edit_contact_kb
+#         )
+#
+#     elif message.text.lower() == "no":
+#         person_name = "NONAME"  ## TODO add name generator service
+#         await state.update_data(person_name=person_name)
+#         await ask_about_additional_info(message, state)
+#     else:
+#         await ask_about_contacts(message, state)
 
-    if message.text.lower() == "yes":
 
-        edit_contact_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        edit_contact_kb.add(types.KeyboardButton(text="Send"),
-                            types.KeyboardButton(text="Edit"))
+async def edit_user_info(message: types.Message, state: FSMContext):
 
+    if message.text.lower() in ["yes", "edit"]:
         user_info = {"name": message.from_user.first_name,
                      "contacts": f"tg: @{message.from_user.username}"}
         await state.update_data(user_info=user_info)
-        await state.set_state(SaveCatStates.editing_user_info)
-
+        state_data = await state.get_data()
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        kb.add(types.KeyboardButton(text="Send"))
         await message.answer(
-            text=f"Your contacts:\n"
-                 f"name: {message.from_user.first_name},\n"
-                 f"contacts: tg: @{message.from_user.username}.\n"
-                 f"Send or edit them? (Send/Edit)",
-            reply_markup=edit_contact_kb
+            text=f"Edit your name and contacts and click 'Send'.",
+            reply_markup=kb
         )
+        field_kb = get_field_kb(state_data["user_info"])
 
+        await state.set_state(SaveCatStates.editing_user_info)
+        await message.answer(
+            text="Сlick what you want to edit:",
+            reply_markup=field_kb)
+    elif message.text.lower() == "send":
+        state_data = await state.get_data()
+        person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
+                                                   state_data["user_info"]["contacts"])
+        await state.update_data(person_name=person_name)
+        await ask_about_additional_info(message, state)
     elif message.text.lower() == "no":
         person_name = "NONAME"  ## TODO add name generator service
         await state.update_data(person_name=person_name)
@@ -98,12 +131,13 @@ async def get_contacts(message: types.Message, state: FSMContext):
         await ask_about_contacts(message, state)
 
 
-async def confirm_user_info(message: types.Message, state: FSMContext):
-    state_data = await state.get_data()
-    person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-                                                state_data["user_info"]["contacts"])
-    await state.update_data(person_name=person_name)
-    await ask_about_additional_info(message, state)
+
+# async def confirm_user_info(message: types.Message, state: FSMContext):
+#     state_data = await state.get_data()
+#     person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
+#                                                 state_data["user_info"]["contacts"])
+#     await state.update_data(person_name=person_name)
+#     await ask_about_additional_info(message, state)
 
 
 def get_field_kb(user_info: dict):
@@ -115,18 +149,7 @@ def get_field_kb(user_info: dict):
 
 
 
-async def edit_user_info(message: types.Message, state: FSMContext):
-    state_data = await state.get_data()
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(types.KeyboardButton(text="Send"))
-    await message.answer(
-        text=f"Edit your name and contacts and click 'Send'.",
-        reply_markup=kb
-    )
-    field_kb = get_field_kb(state_data["user_info"])
-    await message.answer(
-        text="Сlick what you want to edit:",
-        reply_markup=field_kb)
+
 
 
 
@@ -139,6 +162,7 @@ async def editing_user_info(call: types.CallbackQuery, state: FSMContext, callba
 
 async def update_user_info(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
+    await state.set_state(SaveCatStates.ask_user_info)
     user_info = state_data["user_info"]
     user_info[state_data["editing_field"]] = message.text
     await state.update_data(user_info=user_info)
@@ -226,17 +250,17 @@ def register_save_new_cat_handlers(dp: Dispatcher):
 
 
 
-    dp.register_message_handler(
-        get_contacts, content_types=["text"], state=SaveCatStates.ask_name_contact
-    )
+    # dp.register_message_handler(
+    #     get_contacts, content_types=["text"], state=SaveCatStates.ask_user_info
+    # )
 
-    dp.register_message_handler(confirm_user_info,
-                                Text(equals="Send", ignore_case=True),
-                                state=[SaveCatStates.ask_name_contact, SaveCatStates.editing_user_info])
+    # dp.register_message_handler(confirm_user_info,
+    #                             Text(equals="Send", ignore_case=True),
+    #                             state=[SaveCatStates.ask_user_info, SaveCatStates.editing_user_info])
 
     dp.register_message_handler(edit_user_info,
-                                Text(equals="Edit", ignore_case=True),
-                                state=SaveCatStates.editing_user_info)
+                                content_types=["text"],
+                                state=[SaveCatStates.ask_user_info])
 
 
     dp.register_callback_query_handler(
