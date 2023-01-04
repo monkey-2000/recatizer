@@ -27,7 +27,7 @@ class CatsService(CatsServiceBase):
         self.people_db = PeopleMongoClient(client.main)
         self.answers_db = AnswersMongoClient(client.main)
 
-        self.cache = CacheClient(config.redis_client_config)
+        # self.cache = CacheClient(config.redis_client_config)
 
         self.matcher = CatsMatcher()
         self.predictor = Predictor(
@@ -42,12 +42,11 @@ class CatsService(CatsServiceBase):
 
 
     def save_new_cat(self, cat: Cat) -> bool:
-
-
-        if self.cache.exists([*cat.paths, *cat.quadkey]):
-            return
-        else:
-            self.cache.set([*cat.paths, *cat.quadkey], None)
+        # TODO make this method in Mongo srvice
+        # if self.cache.exists([*cat.paths, *cat.quadkey]):
+        #     return
+        # else:
+        #     self.cache.set([*cat.paths, *cat.quadkey], None)
 
         cat.embeddings = self.get_embs(cat.paths)
         ans = self.cats_db.save(cat)
@@ -72,8 +71,8 @@ class CatsService(CatsServiceBase):
         # TODO fix case with none
         qudkeys = list({person.quadkey for person in people})
         last_aswer_time = list({person.dt for person in people})
-        query = self.__get_query(qudkeys, last_aswer_time)
-        cats = self.cats_db.find(query)
+        query = self.__get_query(qudkeys, last_aswer_time) # TODO new method in Mongo Service
+        cats = self.cats_db.find(query)# TODO new method in Mongo Service
 
         if not cats:
             return
@@ -88,14 +87,14 @@ class CatsService(CatsServiceBase):
             if len(cl.cats) > 0:
 
                 cl.person.dt = time()
-                cl.cats = self.answers_db.filter_matches(cl.person._id, cl.cats)
+                cl.cats = self.answers_db.drop_sended_cats(cl.person._id, cl.cats)
                 if cl.cats:
                     # TODO if not ans
                     match_ids = self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
                     cl.match_ids = match_ids
 
-                    self.cache.set(cl.person.paths, {"cats": cl.cats, "match_ids": match_ids})
+                    # self.cache.set(cl.person.paths, {"cats": cl.cats, "match_ids": match_ids})
                     self.bot_loader.upload(cats=cl.cats,
                                            chat_id=cl.person.chat_id,
                                            match_ids=cl.match_ids)
@@ -106,10 +105,10 @@ class CatsService(CatsServiceBase):
         people = self.people_db.find(
             {
                 "quadkey": {"$in": quadkey_query},
-                "dt": {"$lte": time() - self.answer_time_delay},
+             #   "dt": {"$lte": time() - self.answer_time_delay},
                 "is_active": True,
             }
-        )
+        ) # TODO new method in Mongo Service
         if len(people) == 0:
             return
         self.__find_similar_cats(people)
@@ -126,11 +125,11 @@ class CatsService(CatsServiceBase):
 
     def add_user(self, person: Person):
 
-        if self.cache.exists(person.paths):
-            cached_ans = self.cache.get(person.paths)
-            self.bot_loader.upload(cats=cached_ans["cats"],
-                                   chat_id=person.chat_id,
-                                   match_ids=cached_ans["match_ids"])
+        # if self.cache.exists(person.paths):
+        #     cached_ans = self.cache.get(person.paths)
+        #     self.bot_loader.upload(cats=cached_ans["cats"],
+        #                            chat_id=person.chat_id,
+        #                            match_ids=cached_ans["match_ids"])
 
 
         person.embeddings = self.get_embs(person.paths)

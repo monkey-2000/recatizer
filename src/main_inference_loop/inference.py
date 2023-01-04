@@ -16,7 +16,7 @@ inference = CatsService(config)
 @tl.job(interval=timedelta(seconds=config.ans_check_frequency))
 def sending_new_answers():
     logger.warning("start sending_new_answers.")
-    inference.recheck_cats_in_search("no_quad")
+    inference.recheck_cats_in_search("no_quad") #TODO recheck all quad
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from src.entities.cat import Cat, ClosestCats
 from src.entities.person import Person
 
 
+
 class MongoClientBase(ABC):
     @abstractmethod
     def delete(self, query: dict):
@@ -53,6 +54,7 @@ class PeopleMongoClient(MongoClientBase):
     def __init__(self, db):
         self.people_collection = db.people
 
+
     def delete(self, query: dict):
         self.people_collection.delete_one(query)
 
@@ -80,6 +82,7 @@ class PeopleMongoClient(MongoClientBase):
 class AnswersMongoClient(MongoClientBase):
     def __init__(self, db):
         self.answers_collection = db.answers
+        # self.cache = CacheClient(cache_client_config)
 
     def save(self, answer: Answer):
         ans = self.answers_collection.insert_one(answer.as_json_wo_none())
@@ -94,14 +97,14 @@ class AnswersMongoClient(MongoClientBase):
         answers = [Answer.from_bson(p) for p in answers]
         return answers
 
-    def filter_matches(self, person_id: str, match_cats: list[Cat]):
+    def drop_sended_cats(self, person_id: str, match_cats: list[Cat]):
         """delete matches wich in answers yet (dont send same answers)"""
         filtered_matches = []
         for cat in match_cats:
             query = {"wanted_cat_id": person_id, "match_cat_id": cat._id}
-            print(list(self.answers_collection.find(query)))
             if not list(self.answers_collection.find(query)):
                 filtered_matches.append(cat)
+
         return filtered_matches
 
     def add_matches(self, closest_cat: ClosestCats):
