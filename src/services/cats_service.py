@@ -39,23 +39,30 @@ class CatsService(CatsServiceBase):
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
 
 
-
+    def get_embs(self, paths):
+        embs = []
+        for path in paths:
+            emb = self.predictor.predict(path)
+            embs.append(emb.tolist())
+        return embs
 
     def save_new_cat(self, cat: Cat) -> bool:
-        emb = self.predictor.predict(cat.path)
+
+        cat.embeddings = self.get_embs(cat.paths)
+
         if cat.quadkey not in self.matcher.quadkey_index:
             cats = self.cats_db.find({'quadkey': cat.quadkey})
             if cats:
                 self.matcher.init_index(cat.quadkey, cats)
 
         self.matcher.add_items(cat.quadkey, [cat])
-        cat.embeddings = emb.tolist()
+        # cat.embeddings = emb.tolist()
         ans = self.cats_db.save(cat)
         if not ans:
             logging.error("Cat wasn't saved!!!")
 
         #TODO start checking all people who searching their cats min(5 min, 5 new cats)
-        self.__recheck_cats_in_search(cat.quadkey)
+        self.recheck_cats_in_search(cat.quadkey)
         return True
 
     def find_similar_cats(self, people: List[Person]):
@@ -103,17 +110,12 @@ class CatsService(CatsServiceBase):
         people = self.people_db.find(query)
         if len(people) == 0:
             return
-        self.__find_similar_cats(people)
+        self.find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
         self.people_db.delete({"chat_id": id})
 
-    def get_embs(self, paths):
-        embs = []
-        for path in paths:
-            emb = self.predictor.predict(path)
-            embs.append(emb.tolist())
-        return embs
+
 
     def add_user(self, person: Person):
         emb = self.predictor.predict(person.path)
