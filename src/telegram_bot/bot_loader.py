@@ -42,7 +42,7 @@ class DataUploader:
         self.token = token
         self.image_dir = image_dir
 
-    async def _send_match(self, chat_id, match_id, cat, more_info=False):
+    async def _send_match(self, chat_id, cat, more_info=False):
         about = None
         if len(cat.paths) > 1 or cat.additional_info != "no info":
             more_info = True
@@ -81,12 +81,12 @@ class DataUploader:
         await self.bot.send_message(
             chat_id=chat_id,
             text=f"Person {cat.person_name} saw this cat. This is yours?",
-            reply_markup=self.get_match_kb(match_id, more_info=more_info),
+            reply_markup=self.get_match_kb(cat._id, more_info=more_info),
         )
         if about:
             await self.bot.send_message(chat_id=chat_id, text=about)
 
-    async def _send_matches(self, cats, chat_id, match_ids):
+    async def _send_matches(self, cats, chat_id):
         # bot = Bot(token=self.token)
 
         try:
@@ -94,9 +94,8 @@ class DataUploader:
                 chat_id=chat_id,
                 text=" YEEAAAH, New matches for you!!!",
             )
-            for match_id, cat in zip(match_ids, cats):
-
-                await self._send_match(cat=cat, match_id=match_id, chat_id=chat_id)
+            for cat in cats:
+                await self._send_match(cat=cat, chat_id=chat_id)
 
         finally:
             await self.bot.send_message(
@@ -106,12 +105,11 @@ class DataUploader:
             )
             await (await self.bot.get_session()).close()
 
-    def upload(self, chat_id: int, cats: list, match_ids: list):
+    def upload(self, chat_id: int, cats: list):
         asyncio.run(
             self._send_matches(
                 cats=cats,
-                chat_id=chat_id,
-                match_ids=match_ids,
+                chat_id=chat_id
             )
         )
 

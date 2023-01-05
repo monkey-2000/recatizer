@@ -97,6 +97,12 @@ class AnswersMongoClient(MongoClientBase):
         answers = [Answer.from_bson(p) for p in answers]
         return answers
 
+    def save_correct_answer(self, wanted_cat: str, cat_id: str):
+        answer = Answer(
+            _id=None, wanted_cat_id=wanted_cat, match_cat_id=cat_id, user_answer=1)
+        return self.save(answer)
+
+
     def drop_sended_cats(self, person_id: str, match_cats: list[Cat]):
         """delete matches wich in answers yet (dont send same answers)"""
         filtered_matches = []

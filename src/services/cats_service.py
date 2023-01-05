@@ -90,14 +90,13 @@ class CatsService(CatsServiceBase):
                 cl.cats = self.answers_db.drop_sended_cats(cl.person._id, cl.cats)
                 if cl.cats:
                     # TODO if not ans
-                    match_ids = self.answers_db.add_matches(cl)
+                    # match_ids = self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
-                    cl.match_ids = match_ids
-                    print(cl.person.chat_id)
+                    # cl.match_ids = match_ids
+
                     print(self.cache.set(cl.person.chat_id, cl.cats))
                     self.bot_loader.upload(cats=cl.cats,
-                                           chat_id=cl.person.chat_id,
-                                           match_ids=cl.match_ids)
+                                           chat_id=cl.person.chat_id)
 
 
     def recheck_cats_in_search(self, quadkey: str):
