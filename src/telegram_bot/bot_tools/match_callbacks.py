@@ -11,13 +11,16 @@ MatchesCb = CallbackData("matches", "action", "match_id")
 
 
 async def mark_answer(call: types.CallbackQuery, callback_data: dict):
-    match_id = callback_data["match_id"]
-    answer = user_profile.answers_db.find({"_id": ObjectId(match_id)})[0]
+    cat_id = callback_data["match_id"]
+    cat = user_profile.cats_db.find({"_id": ObjectId(cat_id)})[0]
     if callback_data["action"] == "yes":
-        answer.user_answer = 1
+        # user_profile.answers_db.update(answer)
+        await call.answer(text="ANSWEERS!", show_alert=True)
     elif callback_data["action"] == "no":
-        answer.user_answer = 0
-    user_profile.answers_db.update(answer)
+        chat_id = call.from_user.id
+        user_profile.delete_match(chat_id=chat_id,
+                                               cat=cat)
+
     await call.answer(text="We mark your answer!", show_alert=True)
 
 
