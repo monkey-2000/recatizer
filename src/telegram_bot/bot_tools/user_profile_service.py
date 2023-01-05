@@ -234,17 +234,20 @@ class UserProfileClient:
 
     @staticmethod
     def get_kafka_message(_cat_data: dict):
-        kafka_message = {
-            "user_id": _cat_data["user_id"],
-            "cat_name": _cat_data["cat_name"],
-            "image_paths": _cat_data["s3_paths"],
-            "additional_info": _cat_data["additional_info"],
-            "quadkey": _cat_data["quadkey"],
-            "person_name": _cat_data["person_name"],
-        }
+        if _cat_data["kafka_topic"] == "new_search":
+            kafka_message = {"user_id": _cat_data["user_id"]}
+        else:
+            kafka_message = {
+                "user_id": _cat_data["user_id"],
+                "cat_name": _cat_data["cat_name"],
+                "image_paths": _cat_data["s3_paths"],
+                "additional_info": _cat_data["additional_info"],
+                "quadkey": _cat_data["quadkey"],
+                "person_name": _cat_data["person_name"],
+            }
         return kafka_message
 
-    async def send_msgs_to_model(self, cat_data: dict):
+    async def send_msg_to_model(self, cat_data: dict):
         _cat_data = cat_data.copy()
         kafka_message = self.get_kafka_message(_cat_data)
         self.__kafka_producer.send(

@@ -26,9 +26,11 @@ class LimitedMultiprocessingPool(mp_pool.Pool):
 class MsgConsumer:
     FIND_CAT_TOPIC = "find_cat"
     SAW_CAT_TOPIC = "saw_cat"
+    NEW_SEARCH = "new_search"
+
 
     def __init__(self):
-        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
+        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC, self.NEW_SEARCH]
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="latest",  # "earlest",  # "latest",
@@ -80,6 +82,10 @@ class MsgConsumer:
                     dt=time(),
                 )
             )
+
+        elif topic == self.NEW_SEARCH:
+            print("New SEARCH")
+            pass
 
     def main_loop(self):
         while not self.stop_processing:

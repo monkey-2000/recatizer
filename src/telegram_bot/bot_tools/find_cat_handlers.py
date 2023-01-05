@@ -54,36 +54,16 @@ async def _show_last_matches(message: types.Message):
             "\nWait a few minutes we started a new search...\n",
             reply_markup=get_find_menu_kb()
         )
+        new_search_task = {"user_id": message.from_user.id,
+                      "cat_name": message.from_user.id,
+                      "kafka_topic": "new_search"}
+
+        await user_profile.send_msg_to_model(new_search_task)
 
         ## the uploader bot should send a different message than the normal search.
         # there are no matches. TODO New method in bot loader
 
 
-
-# async def show_last_matches(message):
-#     # await state.reset_state(with_data=False)
-#
-#     query = {"chat_id": message.from_user.id, "is_active": True}
-#     wanted_cat = user_profile.people_db.find(query)
-#     query = {"wanted_cat_id": wanted_cat[0]._id, "user_answer": -1}
-#     matches = user_profile.answers_db.find(query)
-#     if len(matches) > bot_config.max_sending_cats:
-#         await message.answer(
-#             "You have many matches. Mark these and then we will send you new ones"
-#         )
-#         matches = matches[: bot_config.max_sending_cats]
-#     if len(matches) == 0:
-#         await message.answer(
-#             text="You dont have match yet.", reply_markup=get_find_menu_kb()
-#         )
-#     else:
-#         for match in matches:
-#             query = {"_id": match.match_cat_id, "is_active": True}
-#             cat = user_profile.cats_db.find(query)
-#             await user_profile.send_match(message, *cat, match._id)
-#         await message.answer(
-#             text="Please mark your matches.", reply_markup=get_find_menu_kb()
-#         )
 
 
 def get_find_menu_kb():
@@ -101,8 +81,6 @@ def get_find_menu_kb():
     keyboard.add(*buttons)
     return keyboard
 
-async def back_to_menu(message: types.Message):
-    pass
 
 async def back_to_menu_cb(call: types.CallbackQuery, state: FSMContext):
 

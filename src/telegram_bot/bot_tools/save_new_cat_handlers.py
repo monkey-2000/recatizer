@@ -217,7 +217,7 @@ async def without_handle_location(message: types.Message, state: FSMContext):
 
 
 async def send_msg(message, cat_data):
-    is_sent = await user_profile.send_msgs_to_model(cat_data)
+    is_sent = await user_profile.send_msg_to_model(cat_data)
 
     if not is_sent:
         await message.answer(
