@@ -67,7 +67,7 @@ class CatsService(CatsServiceBase):
         query["is_active"] = True
         return query
 
-    def __find_similar_cats(self, people: List[Person]):
+    def find_similar_cats(self, people: List[Person]):
         # TODO fix case with none
         qudkeys = list({person.quadkey for person in people})
         last_aswer_time = list({person.dt for person in people})
@@ -110,7 +110,7 @@ class CatsService(CatsServiceBase):
         ) # TODO new method in Mongo Service
         if len(people) == 0:
             return
-        self.__find_similar_cats(people)
+        self.find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
         self.people_db.delete({"chat_id": id})
@@ -134,7 +134,7 @@ class CatsService(CatsServiceBase):
         person.embeddings = self.get_embs(person.paths)
         person = self.people_db.save(person)
 
-        self.__find_similar_cats([person])
+        self.find_similar_cats([person])
 
 
 if __name__ == "__main__":

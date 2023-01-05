@@ -85,7 +85,8 @@ class MsgConsumer:
 
         elif topic == self.NEW_SEARCH:
             print("New SEARCH")
-            pass
+            wanted_cat = self.inference.people_db.find({'chat_id': message["user_id"], "is_active": True})
+            self.inference.find_similar_cats(wanted_cat)
 
     def main_loop(self):
         while not self.stop_processing:

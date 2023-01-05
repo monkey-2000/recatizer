@@ -60,11 +60,6 @@ async def _show_last_matches(message: types.Message):
 
         await user_profile.send_msg_to_model(new_search_task)
 
-        ## the uploader bot should send a different message than the normal search.
-        # there are no matches. TODO New method in bot loader
-
-
-
 
 def get_find_menu_kb():
     buttons = [
