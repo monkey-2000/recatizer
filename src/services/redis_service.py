@@ -12,7 +12,7 @@ class CacheClient:
     def set(self, key: list, value: list):
         key = pickle.dumps(key)
         value = pickle.dumps(value)
-        self.redis_client.set(key, value)
+        return self.redis_client.set(key, value)
 
 
     def get(self, key: list):
@@ -24,7 +24,7 @@ class CacheClient:
         return self.redis_client.delete(key)
 
 
-
     def exists(self, key: list):
+        print(key)
         key = pickle.dumps(key)
         return self.redis_client.exists(key)

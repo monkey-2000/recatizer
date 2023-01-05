@@ -23,7 +23,7 @@ async def lost_cat(message: types.Message, state: FSMContext):
             "You are already looking for one cat.",
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        await show_last_matches(message)
+        await _show_last_matches(message)
     else:
         await state.set_state(RStates.find)
         await message.answer(
@@ -33,30 +33,57 @@ async def lost_cat(message: types.Message, state: FSMContext):
         await state.update_data(kafka_topic="find_cat")
 
 
-async def show_last_matches(message):
-    # await state.reset_state(with_data=False)
 
-    query = {"chat_id": message.from_user.id, "is_active": True}
-    wanted_cat = user_profile.people_db.find(query)
-    query = {"wanted_cat_id": wanted_cat[0]._id, "user_answer": -1}
-    matches = user_profile.answers_db.find(query)
-    if len(matches) > bot_config.max_sending_cats:
-        await message.answer(
-            "You have many matches. Mark these and then we will send you new ones"
-        )
-        matches = matches[: bot_config.max_sending_cats]
-    if len(matches) == 0:
-        await message.answer(
-            text="You dont have match yet.", reply_markup=get_find_menu_kb()
-        )
-    else:
-        for match in matches:
-            query = {"_id": match.match_cat_id, "is_active": True}
-            cat = user_profile.cats_db.find(query)
-            await user_profile.send_match(message, *cat, match._id)
+async def _show_last_matches(message: types.Message):
+    cats = user_profile.get_matches(message.from_user.id)
+    if cats:
+        if len(cats) > bot_config.max_sending_cats:
+            await message.answer(
+                "You have many matches. Mark these and then we will send you new ones"
+            )
+            cats = cats[: bot_config.max_sending_cats]
+        for cat in cats:
+            await user_profile._send_match(message, cat)
+
         await message.answer(
             text="Please mark your matches.", reply_markup=get_find_menu_kb()
         )
+
+    else:
+        await message.answer(
+            "\nWait a few minutes we started a new search...\n",
+            reply_markup=get_find_menu_kb()
+        )
+
+        ## the uploader bot should send a different message than the normal search.
+        # there are no matches. TODO New method in bot loader
+
+
+
+# async def show_last_matches(message):
+#     # await state.reset_state(with_data=False)
+#
+#     query = {"chat_id": message.from_user.id, "is_active": True}
+#     wanted_cat = user_profile.people_db.find(query)
+#     query = {"wanted_cat_id": wanted_cat[0]._id, "user_answer": -1}
+#     matches = user_profile.answers_db.find(query)
+#     if len(matches) > bot_config.max_sending_cats:
+#         await message.answer(
+#             "You have many matches. Mark these and then we will send you new ones"
+#         )
+#         matches = matches[: bot_config.max_sending_cats]
+#     if len(matches) == 0:
+#         await message.answer(
+#             text="You dont have match yet.", reply_markup=get_find_menu_kb()
+#         )
+#     else:
+#         for match in matches:
+#             query = {"_id": match.match_cat_id, "is_active": True}
+#             cat = user_profile.cats_db.find(query)
+#             await user_profile.send_match(message, *cat, match._id)
+#         await message.answer(
+#             text="Please mark your matches.", reply_markup=get_find_menu_kb()
+#         )
 
 
 def get_find_menu_kb():
@@ -74,8 +101,10 @@ def get_find_menu_kb():
     keyboard.add(*buttons)
     return keyboard
 
+async def back_to_menu(message: types.Message):
+    pass
 
-async def back_to_menu(call: types.CallbackQuery, state: FSMContext):
+async def back_to_menu_cb(call: types.CallbackQuery, state: FSMContext):
 
     await state.finish()
     await call.message.answer(
@@ -108,7 +137,7 @@ def register_find_cat_handlers(dp: Dispatcher):
     )
 
     dp.register_callback_query_handler(
-        back_to_menu, FindCb.filter(action=["back"]), state="*"
+        back_to_menu_cb, FindCb.filter(action=["back"]), state="*"
     )
 
     dp.register_callback_query_handler(

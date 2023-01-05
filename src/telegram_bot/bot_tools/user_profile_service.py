@@ -8,6 +8,7 @@ from src.services.mongo_service import (
     PeopleMongoClient,
     AnswersMongoClient,
 )
+from src.services.redis_service import CacheClient
 from src.telegram_bot.configs.bot_base_configs import TgBotConfig
 from src.utils.s3_client import YandexS3Client
 
@@ -27,6 +28,31 @@ class MatchSender:
 
     def __init__(self, image_dir):
         self.image_dir = image_dir
+
+    async def _send_match(
+            self, message, cat, cat_images: list,  more_info=False
+    ):
+
+        os.makedirs(self.image_dir, exist_ok=True)
+        media_group = types.MediaGroup()
+        for cat_image in cat_images:
+            image_name = "{0}.jpg".format(str(uuid.uuid4()))
+            image_path = os.path.join(self.image_dir, image_name)
+            cv2.imwrite(image_path, cat_image)
+            media_group.attach_photo(InputMediaPhoto(media=InputFile(image_path)))
+            # TODO resize photo
+
+            os.remove(image_path)
+        if cat.quadkey != "no_quad":
+            titlat = mercantile.quadkey_to_tile(cat.quadkey)
+            coo = mercantile.ul(titlat)
+            await message.answer_location(latitude=coo.lat, longitude=coo.lng)
+        await message.answer_media_group(media=media_group)
+
+        await message.answer(
+            text=f"Person {cat.person_name} saw this cat. This is yours?",
+            reply_markup=self.get_match_kb(cat._id, more_info=more_info),
+        )
 
     async def send_match(
         self, message, cat, cat_images: list, match_id, more_info=False, additional=None
@@ -97,14 +123,43 @@ class UserProfileClient:
         self.__sender = MatchSender(self.image_dir)
         self.__kafka_producer = Producer()
 
-        # self.redis_client = self.get_redis_client(host=config.redis_client_config.host,
-        #                                           port=config.redis_client_config.port,
-        #                                           db=config.redis_client_config.db)
+        self.redis_client = CacheClient(config.redis_client_config)
 
-    @staticmethod
-    def get_redis_client(host='localhost', port=6379, db=0):
-        pool = redis.ConnectionPool(host=host, port=port, db=db)
-        return redis.Redis(connection_pool=pool)
+    def get_matches(self, chat_id: int):
+        """Load last answer from cache"""
+        if self.redis_client.exists(chat_id):
+            return self.redis_client.get(chat_id)
+        else:
+            return
+            # TODO start new search!!!!!!!!!!!!!!!!!!!
+            # Load cat from MongoDB
+            # Send to Model
+
+    async def _send_match(self, message: types.Message, cat, more_info=False):
+        about = None
+        if len(cat.paths) > 1 or cat.additional_info != "no info":
+            more_info = True
+            about = "We have some extra info about this cat:\n"
+
+            if cat.additional_info != "no info":
+                about += "-additional info;\n"
+            if len(cat.paths) > 1:
+                about += "-{0} photos\n".format(len(cat.paths))
+            about += "Press More to see it."
+
+        path = cat.paths[0]  # TODO choose best photo
+        cat_image = self.s3_client.load_image(path)
+        cat_image = cv2.cvtColor(cat_image, cv2.COLOR_BGR2RGB)
+
+        await self.__sender._send_match(
+            message, cat, [cat_image], more_info=more_info
+        )
+        if about:
+            await message.answer(text=about)
+
+
+
+
 
     async def send_match(self, message: types.Message, cat, match_id, more_info=False):
         about = None

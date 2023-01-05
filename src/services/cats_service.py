@@ -27,7 +27,7 @@ class CatsService(CatsServiceBase):
         self.people_db = PeopleMongoClient(client.main)
         self.answers_db = AnswersMongoClient(client.main)
 
-        # self.cache = CacheClient(config.redis_client_config)
+        self.cache = CacheClient(config.redis_client_config)
 
         self.matcher = CatsMatcher()
         self.predictor = Predictor(
@@ -93,8 +93,8 @@ class CatsService(CatsServiceBase):
                     match_ids = self.answers_db.add_matches(cl)
                     self.people_db.update(cl.person)
                     cl.match_ids = match_ids
-
-                    # self.cache.set(cl.person.paths, {"cats": cl.cats, "match_ids": match_ids})
+                    print(cl.person.chat_id)
+                    print(self.cache.set(cl.person.chat_id, cl.cats))
                     self.bot_loader.upload(cats=cl.cats,
                                            chat_id=cl.person.chat_id,
                                            match_ids=cl.match_ids)
