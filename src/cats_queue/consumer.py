@@ -66,6 +66,7 @@ class MsgConsumer:
                 )
             )
         elif topic == self.SAW_CAT_TOPIC:
+            # TODO case with two cats!!!!!
             self.inference.save_new_cat(
                 Cat(
                     _id=None,

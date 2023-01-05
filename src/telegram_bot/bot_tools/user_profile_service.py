@@ -134,8 +134,14 @@ class UserProfileClient:
             # TODO start new search!!!!!!!!!!!!!!!!!!!
             # Load cat from MongoDB
             # Send to Model
+
+    def exists_match(self, chat_id, cat):
+        matches = self.redis_client.get(chat_id)
+        return cat in matches
+
     def delete_match(self, chat_id, cat):
         matches = self.redis_client.get(chat_id)
+
         matches.remove(cat)
         return self.redis_client.set(chat_id, matches)
 
