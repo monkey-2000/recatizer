@@ -6,6 +6,7 @@ import torch.nn as nn
 import math
 import torch.nn.functional as F
 
+
 class ArcMarginProduct(nn.Module):
     r"""Implement of large margin arc distance: :
     Args:
@@ -24,7 +25,7 @@ class ArcMarginProduct(nn.Module):
         m: float,
         easy_margin: bool,
         ls_eps: float,
-        device: torch.device
+        device: torch.device,
     ):
         super(ArcMarginProduct, self).__init__()
         self.in_features = in_features

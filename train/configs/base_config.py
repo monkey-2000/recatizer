@@ -17,9 +17,11 @@ class OptimizerParams:
     eps: float
     schedule: LearningSchedule
 
+
 @dataclass
 class TaskConfig:
     model_name: str
+
 
 @dataclass
 class DatasetConfig:
@@ -28,10 +30,13 @@ class DatasetConfig:
     base_path: str
     val_path: str
 
+
 @dataclass
 class HeadConfig:
     type: str
     params: Dict[str, float]
+
+
 @dataclass
 class PoolConfig:
     type: str

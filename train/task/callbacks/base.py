@@ -8,6 +8,7 @@ class Callback(object):
     """
     Abstract base class used to build new callbacks.
     """
+
     def on_batch_begin(self, batch):
         pass
 
@@ -65,20 +66,22 @@ class EarlyStopper(Callback):
     def __init__(self, patience, loss_terms, metrics_collection):
         Callback.__init__(self)
         self.patience = patience
-        self.loss_terms =loss_terms
+        self.loss_terms = loss_terms
         self.metrics_collection = metrics_collection
-
 
     def get_loss(self):
         loss = 0.0
         for term, weight in self.loss_terms.items():
-            loss += weight * self.metrics_collection.val_metrics.get(term, 0.)
+            loss += weight * self.metrics_collection.val_metrics.get(term, 0.0)
 
         message = "Your loss is 0. All items in loss_term should match metrics to watch, loss_terms: {}, val_metrics: {}"
         if not loss:
-            logging.info(message.format(self.loss_terms, self.metrics_collection.val_metrics))
+            logging.info(
+                message.format(self.loss_terms, self.metrics_collection.val_metrics)
+            )
 
         return loss
+
     def on_epoch_end(self, epoch):
         loss = self.get_loss()
         if loss < self.metrics_collection.best_loss:

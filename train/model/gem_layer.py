@@ -14,7 +14,9 @@ class GeM(nn.Module):
         self.eps = eps
 
     def gem(self, x, p=3, eps=1e-6):
-        return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1.0 / p)
+        return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(
+            1.0 / p
+        )
 
     def forward(self, x):
         ret = self.gem(x, p=self.p, eps=self.eps)

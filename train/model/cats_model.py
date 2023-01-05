@@ -10,8 +10,15 @@ from train.model.arc_face_head import ArcMarginProduct
 from train.model.heads.arc_face import ArcAdaptiveMarginProduct
 import numpy as np
 
+
 class HappyWhaleModel(nn.Module):
-    def __init__(self, config: ModelConfig, device: torch.device, is_train_stage: bool = True, id_class_nums: Optional[np.ndarray] = None):
+    def __init__(
+        self,
+        config: ModelConfig,
+        device: torch.device,
+        is_train_stage: bool = True,
+        id_class_nums: Optional[np.ndarray] = None,
+    ):
 
         super(HappyWhaleModel, self).__init__()
         # Retrieve pretrained weights
@@ -33,7 +40,11 @@ class HappyWhaleModel(nn.Module):
             forward_features.add_module("flatten", nn.Flatten())
         elif config.pool_config.type == "gem":
             forward_features.add_module(
-                "pool", GeM(p=config.pool_config.params["p"], p_trainable=config.pool_config.params["p_trainable"])
+                "pool",
+                GeM(
+                    p=config.pool_config.params["p"],
+                    p_trainable=config.pool_config.params["p_trainable"],
+                ),
             )
             forward_features.add_module("flatten", nn.Flatten())
         embedding_size = self.backbone.out_features
@@ -49,8 +60,9 @@ class HappyWhaleModel(nn.Module):
 
     def build_head(self, config: ModelConfig, embedding_size: int):
         margins = (
-                np.power(self.id_class_nums, config.head_config.params["margin_power_id"]) * config.head_config.params["margin_coef_id"]
-                + config.head_config.params["margin_cons_id"]
+            np.power(self.id_class_nums, config.head_config.params["margin_power_id"])
+            * config.head_config.params["margin_coef_id"]
+            + config.head_config.params["margin_cons_id"]
         )
 
         if margins.shape[0] * 2 == config.num_classes:
@@ -63,9 +75,10 @@ class HappyWhaleModel(nn.Module):
             s=config.head_config.params["s"],
             k=config.head_config.params["k"],
             initialization=config.head_config.params["init"],
-            device=self.device
+            device=self.device,
         )
         return head
+
     def forward(self, input):
         images = input[0]
         features = self.backbone(images)
@@ -75,6 +88,10 @@ class HappyWhaleModel(nn.Module):
         if self.is_train_stage:
             labels = input[1]
             logits_margin, logits = self.arcface(embedding, labels)
-            return {"logits_margin": logits_margin, "logits": logits, "embedding": embedding}
+            return {
+                "logits_margin": logits_margin,
+                "logits": logits,
+                "embedding": embedding,
+            }
         else:
             return {"embedding": embedding}

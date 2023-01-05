@@ -17,29 +17,24 @@ class OptimizerBuilder:
         eps = self.optimizer_config.eps
 
         if self.optimizer_config.type == "SGD":
-            optimizer = optim.SGD(params,
-                                  lr=learning_rate,
-                                  weight_decay=weight_decay)
+            optimizer = optim.SGD(params, lr=learning_rate, weight_decay=weight_decay)
 
         elif self.optimizer_config.type == "Adam":
-            optimizer = optim.Adam(params,
-                                   eps=eps,
-                                   lr=learning_rate,
-                                   weight_decay=weight_decay)
+            optimizer = optim.Adam(
+                params, eps=eps, lr=learning_rate, weight_decay=weight_decay
+            )
         elif self.optimizer_config.type == "AdamW":
-            optimizer = AdamW(params,
-                              eps=eps,
-                              lr=learning_rate,
-                              weight_decay=weight_decay)
+            optimizer = AdamW(
+                params, eps=eps, lr=learning_rate, weight_decay=weight_decay
+            )
         elif self.optimizer_config.type == "RmsProp":
-            optimizer = RMSprop(params,
-                                lr=learning_rate,
-                                weight_decay=weight_decay)
+            optimizer = RMSprop(params, lr=learning_rate, weight_decay=weight_decay)
 
         else:
-            raise KeyError("unrecognized optimizer {}".format(self.optimizer_config.type))
+            raise KeyError(
+                "unrecognized optimizer {}".format(self.optimizer_config.type)
+            )
         return optimizer
-
 
     def build_scheduler(self, optimizer):
         scheduler_config = self.optimizer_config.schedule
@@ -55,9 +50,12 @@ class OptimizerBuilder:
         elif scheduler_config.type == "constant":
             scheduler = lr_scheduler.LambdaLR(optimizer, lambda epoch: 1.0)
         elif scheduler_config.type == "linear":
+
             def linear_lr(it):
-                return it * scheduler_config.params["alpha"] + scheduler_config.params[
-                    "beta"]
+                return (
+                    it * scheduler_config.params["alpha"]
+                    + scheduler_config.params["beta"]
+                )
 
             scheduler = lr_scheduler.LambdaLR(optimizer, linear_lr)
         return scheduler

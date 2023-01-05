@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 
+
 @dataclass
 class KafkaConsumerCfg:
     kafka_topic: str
@@ -8,7 +9,7 @@ class KafkaConsumerCfg:
     group_id: str
     client_id: str
     check_crcs: bool
-   # consumer_timeout_ms: int
+    # consumer_timeout_ms: int
     session_timeout_ms: int
     request_timeout_ms: int
     max_partition_fetch_bytes: int
@@ -28,9 +29,21 @@ class S3ClientConfig:
     aws_access_key_id: str
     aws_secret_access_key: str
 
+
+@dataclass
+class RedisClientConfig:
+    host: str
+    port: int
+    db: int
+
+
 @dataclass
 class TgBotConfig:
     token: str
     image_dir: str
+    kafka_server: list
     s3_client_config: S3ClientConfig
-
+    redis_client_config: RedisClientConfig
+    mongoDB_url: str
+    max_sending_cats: int
+    max_load_photos: int

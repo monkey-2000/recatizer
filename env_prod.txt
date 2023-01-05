@@ -1,0 +1,14 @@
+PROJECT_DIR=''
+#for train
+CAT_INDIVIDUALS_DS_PATH=''
+OUTPUT_FILEPATH=''
+
+# telegram bot
+BOT_TOKEN=''
+
+# Yandex storage
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+# Model way
+MODEL_PATH=''
+LOCAL_MODEL_PATH=''

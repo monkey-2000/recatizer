@@ -20,10 +20,18 @@ class CatsTask(BaseTask):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def get_train_dataset(self):
-        return CatsDataset(self.dataset_config.base_path, self.dataset_config.train_path, get_transforms_train(self.image_size))
+        return CatsDataset(
+            self.dataset_config.base_path,
+            self.dataset_config.train_path,
+            get_transforms_train(self.image_size),
+        )
 
     def get_val_dataset(self):
-        return CatsDataset(self.dataset_config.base_path, self.dataset_config.train_path, get_transforms_train(self.image_size))
+        return CatsDataset(
+            self.dataset_config.base_path,
+            self.dataset_config.train_path,
+            get_transforms_train(self.image_size),
+        )
 
     def build_criterion(self) -> BaseLossAndMetricCriterion:
         metrics = [PRMetric(self.model_config.num_classes), AccuracyMetric(), F1Score(self.model_config.num_classes)]
@@ -32,5 +40,10 @@ class CatsTask(BaseTask):
     def get_model(self):
         df = pd.read_csv(self.dataset_config.train_path)
         id_class_nums = df.cat_id.value_counts().sort_index().values
-        model = HappyWhaleModel(self.model_config, self.device, is_train_stage=True, id_class_nums=id_class_nums)
+        model = HappyWhaleModel(
+            self.model_config,
+            self.device,
+            is_train_stage=True,
+            id_class_nums=id_class_nums,
+        )
         return model

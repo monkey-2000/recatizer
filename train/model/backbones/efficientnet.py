@@ -1,4 +1,3 @@
-
 from timm.models.efficientnet import EfficientNet
 from torch import Tensor
 

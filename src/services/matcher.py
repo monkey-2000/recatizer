@@ -37,11 +37,14 @@ class Predictor:
         image = np.expand_dims(image, axis=0)
         return image
 
+
     def predict(self, path: str):
         data = self.s3_client.load_image(path)
         data = self._images_to_tensor(data)
         pred = self.model.predict(data)
         return pred[0]
+        # TODO deccomment for model off
+        #return np.array([0] * 512)
 
 class CatsMatcher:
     def __init__(self, dim: int, max_elements: int = 10000):
@@ -85,6 +88,18 @@ class CatsMatcher:
         all_embeddings = np.float32(np.vstack(all_embeddings))
         all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
         return all_embeddings
+    #old
+    # all_embeddings = []
+    # embeddings_belonging = []
+    #
+    # for entity_id, entity in enumerate(entities):
+    #     for embedding in entity.embeddings:
+    #         all_embeddings.append(embedding)
+    #         embeddings_belonging.append(entity)
+    #
+    # all_embeddings = np.float32(np.vstack(all_embeddings))
+    # all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
+    # return all_embeddings, embeddings_belonging
 
     def filter_by_thr(self, closest: List[ClosestCats], thr: float):
         for cl in closest:
@@ -100,3 +115,13 @@ class CatsMatcher:
         closest = self.create_distances_df(quadkey, for_check, labels, distances)
         res = list(self.filter_by_thr(closest, thr))
         return res
+
+    @staticmethod
+    def reduce_closest_cats(closest_cats):
+        """deletes duplicates"""
+        reduced_closest_cats = {}
+        for cat in closest_cats:
+            if id(cat) not in reduced_closest_cats:
+                reduced_closest_cats[id(cat)] = cat
+
+        return reduced_closest_cats.values()

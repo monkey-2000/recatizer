@@ -1,0 +1,4 @@
+kafka-python
+faiss-cpu
+tqdm
+openvino

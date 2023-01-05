@@ -1,5 +1,6 @@
 import logging
 import sys
+from time import time
 
 from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
@@ -9,11 +10,12 @@ from kafka.consumer.fetcher import ConsumerRecord
 from src.services.cats_service import CatsService
 from src.configs.service_config import default_service_config
 from src.entities.cat import Cat
-from src.entities import Person
+from src.entities.person import Person
 
-logger = logging.getLogger('chat_bot_logger')
+# from src.configs.service_config import default_service_config as config
+
+logger = logging.getLogger("chat_bot_logger")
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
-
 
 
 class LimitedMultiprocessingPool(mp_pool.Pool):
@@ -22,17 +24,22 @@ class LimitedMultiprocessingPool(mp_pool.Pool):
 
 
 class MsgConsumer:
-    FIND_CAT_TOPIC = 'find_cat'
-    SAW_CAT_TOPIC = 'saw_cat'
+    FIND_CAT_TOPIC = "find_cat"
+    SAW_CAT_TOPIC = "saw_cat"
+    NEW_SEARCH = "new_search"
+
+
     def __init__(self):
-        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
+        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC, self.NEW_SEARCH]
 
         self.consumer = KafkaConsumer(
-            auto_offset_reset="earliest",
-            bootstrap_servers=['localhost:9092'],
+            auto_offset_reset="latest",  # "earlest",  # "latest",
+            enable_auto_commit=True,
+            bootstrap_servers=default_service_config.kafka_broker_ip,
             consumer_timeout_ms=1000,
-            value_deserializer=lambda v: json.loads(v.decode('ascii')),
-            key_deserializer=lambda v: json.loads(v.decode('ascii')),
+            value_deserializer=lambda v: json.loads(v.decode("ascii")),
+            key_deserializer=lambda v: json.loads(v.decode("ascii")),
+            group_id="cat_group",
         )
         self.consumer.subscribe(self.topics)
         self.pool_cache_limit = 1
@@ -46,30 +53,74 @@ class MsgConsumer:
     def execute(self, msg: ConsumerRecord):
         topic = msg.topic
         message = msg.value
+
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                   embeddings=None, chat_id=message["user_id"]))
+            self.inference.add_user(
+                Person(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    is_active=True,
+                    additional_info=message["additional_info"],
+                    chat_id=message["user_id"],
+                    dt=-float("inf"),
+                )
+            )
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                                           embeddings=None, additional_info=message["additional_info"]))
+            # TODO case with two cats!!!!!
+            self.inference.save_new_cat(
+                Cat(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    is_active=True,
+                    additional_info=message["additional_info"],
+                    chat_id=message["user_id"],
+                    person_name=message["person_name"],
+                    dt=time(),
+                )
+            )
+
+        elif topic == self.NEW_SEARCH:
+            print("New SEARCH")
+            wanted_cat = self.inference.people_db.find({'chat_id': message["user_id"], "is_active": True})
+            self.inference.find_similar_cats(wanted_cat)
 
     def main_loop(self):
         while not self.stop_processing:
             for msg in self.consumer:
+
                 logger.info(msg)
-                logger.info('%d: %d: k=%s v=%s' % (msg.partition,
-                                             msg.offset,
-                                             msg.key,
-                                             msg.value))
+                logger.info(
+                    "%d: %d: k=%s v=%s"
+                    % (msg.partition, msg.offset, msg.key, msg.value)
+                )
+
                 if self.stop_processing:
                     break
+
                 self.execute(msg)
         self.consumer.close()
 
+    def run(self):
+        logger.setLevel("INFO")
+        fh = logging.StreamHandler(sys.stdout)
+        fh.setFormatter(logging.Formatter(_log_format))
+        fh.setLevel(level=logging.INFO)
 
-if __name__ == '__main__':
+        logger.addHandler(fh)
+        logger.setLevel(level=logging.INFO)
+        logger.warning("Consumer start.")
 
-    logger.setLevel('INFO')
+        consumer = MsgConsumer()
+        consumer.main_loop()
+
+
+if __name__ == "__main__":
+
+    logger.setLevel("INFO")
     fh = logging.StreamHandler(sys.stdout)
     fh.setFormatter(logging.Formatter(_log_format))
     fh.setLevel(level=logging.INFO)
@@ -80,7 +131,3 @@ if __name__ == '__main__':
 
     consumer = MsgConsumer()
     consumer.main_loop()
-
-
-
-

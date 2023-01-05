@@ -1,5 +1,6 @@
 from openvino.runtime import Core
 
+
 class CatIrClassificator:
     def __init__(self, ir_path: str):
         ie = Core()
