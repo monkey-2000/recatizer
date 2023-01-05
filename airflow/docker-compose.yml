@@ -1,0 +1,80 @@
+---
+version: '3.4'
+
+#x-environment:
+#  &airflow_environment
+#  - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+#  - AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS=False
+#  - AIRFLOW__CORE__LOAD_EXAMPLES=False
+#  - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql://airflow:airflow@postgres:5432/airflow
+#  - AIRFLOW__CORE__STORE_DAG_CODE=True
+#  - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+#  - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+#  - AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY}
+
+x-common:
+  &common
+  image: apache/airflow:2.3.0
+  user: "${AIRFLOW_UID}:0"
+  env_file: 
+    - .env
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    - /var/run/docker.sock:/var/run/docker.sock
+
+x-depends-on:
+  &depends-on
+  depends_on:
+    postgres:
+      condition: service_healthy
+    airflow-init:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    env_file:
+      - .env
+
+  scheduler:
+    <<: *common
+    <<: *depends-on
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: on-failure
+    ports:
+      - "8793:8793"
+
+  webserver:
+    <<: *common
+    <<: *depends-on
+    container_name: airflow-webserver
+    restart: always
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+  
+  airflow-init:
+    <<: *common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        exec /entrypoint airflow version
