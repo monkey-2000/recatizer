@@ -118,11 +118,7 @@ async def edit_user_info(message: types.Message, state: FSMContext):
             text="Сlick what you want to edit:",
             reply_markup=field_kb)
     elif message.text.lower() == "send":
-        state_data = await state.get_data()
-        person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-                                                   state_data["user_info"]["contacts"])
-        await state.update_data(person_name=person_name)
-        await ask_about_additional_info(message, state)
+       await send_contact_info(message, state)
     elif message.text.lower() == "no":
         person_name = "NONAME"  ## TODO add name generator service
         await state.update_data(person_name=person_name)
@@ -130,15 +126,12 @@ async def edit_user_info(message: types.Message, state: FSMContext):
     else:
         await ask_about_contacts(message, state)
 
-
-
-# async def confirm_user_info(message: types.Message, state: FSMContext):
-#     state_data = await state.get_data()
-#     person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-#                                                 state_data["user_info"]["contacts"])
-#     await state.update_data(person_name=person_name)
-#     await ask_about_additional_info(message, state)
-
+async def send_contact_info(message: types.Message, state: FSMContext):
+    state_data = await state.get_data()
+    person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
+                                               state_data["user_info"]["contacts"])
+    await state.update_data(person_name=person_name)
+    await ask_about_additional_info(message, state)
 
 def get_field_kb(user_info: dict):
     field_kb = types.InlineKeyboardMarkup(row_width=1)
@@ -148,19 +141,17 @@ def get_field_kb(user_info: dict):
     return field_kb
 
 
-
-
-
-
-
 async def editing_user_info(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
     await state.update_data(editing_msg=call.message, editing_field=callback_data["field_key"])
-    await call.answer(
-        text="Send new message with a new {0} value.".format(callback_data["field_key"]))
 
+
+    await call.answer(text="Send new message with a new {0} value.".format(callback_data["field_key"]), show_alert=True)
 
 
 async def update_user_info(message: types.Message, state: FSMContext):
+    if message.text.lower() == "send":
+        await send_contact_info(message, state)
+        return
     state_data = await state.get_data()
     await state.set_state(SaveCatStates.ask_user_info)
     user_info = state_data["user_info"]
@@ -168,8 +159,6 @@ async def update_user_info(message: types.Message, state: FSMContext):
     await state.update_data(user_info=user_info)
     await state_data["editing_msg"].edit_reply_markup(get_field_kb(user_info))
     await message.delete()
-
-
 async def ask_about_additional_info(message, state):
     await state.set_state(SaveCatStates.ask_extra_info)
     await message.answer(
