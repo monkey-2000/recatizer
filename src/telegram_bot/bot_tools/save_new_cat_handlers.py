@@ -69,34 +69,6 @@ async def ask_about_contacts(message, state):
     )
 
 
-# async def get_contacts(message: types.Message, state: FSMContext):
-#
-#     if message.text.lower() == "yes":
-#
-#         edit_contact_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-#         edit_contact_kb.add(types.KeyboardButton(text="Send"),
-#                             types.KeyboardButton(text="Edit"))
-#
-#         user_info = {"name": message.from_user.first_name,
-#                      "contacts": f"tg: @{message.from_user.username}"}
-#         await state.update_data(user_info=user_info)
-#         await state.set_state(SaveCatStates.editing_user_info)
-#
-#         await message.answer(
-#             text=f"Your contacts:\n"
-#                  f"name: {message.from_user.first_name},\n"
-#                  f"contacts: tg: @{message.from_user.username}.\n"
-#                  f"Send or edit them? (Send/Edit)",
-#             reply_markup=edit_contact_kb
-#         )
-#
-#     elif message.text.lower() == "no":
-#         person_name = "NONAME"  ## TODO add name generator service
-#         await state.update_data(person_name=person_name)
-#         await ask_about_additional_info(message, state)
-#     else:
-#         await ask_about_contacts(message, state)
-
 
 async def edit_user_info(message: types.Message, state: FSMContext):
 
@@ -118,11 +90,7 @@ async def edit_user_info(message: types.Message, state: FSMContext):
             text="Сlick what you want to edit:",
             reply_markup=field_kb)
     elif message.text.lower() == "send":
-        state_data = await state.get_data()
-        person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-                                                   state_data["user_info"]["contacts"])
-        await state.update_data(person_name=person_name)
-        await ask_about_additional_info(message, state)
+       await send_contact_info(message, state)
     elif message.text.lower() == "no":
         person_name = "NONAME"  ## TODO add name generator service
         await state.update_data(person_name=person_name)
@@ -130,15 +98,12 @@ async def edit_user_info(message: types.Message, state: FSMContext):
     else:
         await ask_about_contacts(message, state)
 
-
-
-# async def confirm_user_info(message: types.Message, state: FSMContext):
-#     state_data = await state.get_data()
-#     person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-#                                                 state_data["user_info"]["contacts"])
-#     await state.update_data(person_name=person_name)
-#     await ask_about_additional_info(message, state)
-
+async def send_contact_info(message: types.Message, state: FSMContext):
+    state_data = await state.get_data()
+    person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
+                                               state_data["user_info"]["contacts"])
+    await state.update_data(person_name=person_name)
+    await ask_about_additional_info(message, state)
 
 def get_field_kb(user_info: dict):
     field_kb = types.InlineKeyboardMarkup(row_width=1)
@@ -148,19 +113,23 @@ def get_field_kb(user_info: dict):
     return field_kb
 
 
-
-
-
-
-
 async def editing_user_info(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
     await state.update_data(editing_msg=call.message, editing_field=callback_data["field_key"])
-    await call.answer(
-        text="Send new message with a new {0} value.".format(callback_data["field_key"]))
+    msg_text = r"_It is not the message you are looking for\.\.\._"
+    # msg = await call.message.answer(
+    #                              msg_text,
+    #                              reply_markup=types.ReplyKeyboardRemove(),
+    #                              parse_mode="MarkdownV2")
+    # await msg.delete()
+
+    await call.answer(text="Send new message with a new {0} value.".format(callback_data["field_key"]), show_alert=True)
 
 
 
 async def update_user_info(message: types.Message, state: FSMContext):
+    if message.text.lower() == "send":
+        await send_contact_info(message, state)
+        return
     state_data = await state.get_data()
     await state.set_state(SaveCatStates.ask_user_info)
     user_info = state_data["user_info"]
@@ -168,6 +137,8 @@ async def update_user_info(message: types.Message, state: FSMContext):
     await state.update_data(user_info=user_info)
     await state_data["editing_msg"].edit_reply_markup(get_field_kb(user_info))
     await message.delete()
+
+
 
 
 async def ask_about_additional_info(message, state):
@@ -245,26 +216,14 @@ def register_save_new_cat_handlers(dp: Dispatcher):
         save_photo_to_s3, content_types=["photo"], state=[RStates.find, RStates.saw]
     )
 
-    # dp.register_message_handler(
-    #     get_extra_info, Text(equals=["Yes"], ignore_case=True), state=SaveCatStates.ask_extra_info)
-
-
-
-    # dp.register_message_handler(
-    #     get_contacts, content_types=["text"], state=SaveCatStates.ask_user_info
-    # )
-
-    # dp.register_message_handler(confirm_user_info,
-    #                             Text(equals="Send", ignore_case=True),
-    #                             state=[SaveCatStates.ask_user_info, SaveCatStates.editing_user_info])
-
     dp.register_message_handler(edit_user_info,
                                 content_types=["text"],
                                 state=[SaveCatStates.ask_user_info])
 
 
     dp.register_callback_query_handler(
-        editing_user_info, ContactCb.filter(action=["edit"]), state=SaveCatStates.editing_user_info
+        editing_user_info, ContactCb.filter(action=["edit"]),
+        state=SaveCatStates.editing_user_info
     )
 
     dp.register_message_handler(
