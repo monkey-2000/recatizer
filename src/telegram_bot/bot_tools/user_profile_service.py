@@ -130,7 +130,10 @@ class UserProfileClient:
         if self.redis_client.exists(chat_id):
             return self.redis_client.get(chat_id)
         else:
-            return
+            self.send_msg_to_model({"user_id": chat_id,
+                                    "kafka_topic": "new_search",
+                                    "cat_name": chat_id})
+
             # TODO start new search!!!!!!!!!!!!!!!!!!!
             # Load cat from MongoDB
             # Send to Model
@@ -171,8 +174,6 @@ class UserProfileClient:
 
 
 
-
-
     async def send_match(self, message: types.Message, cat, match_id, more_info=False):
         about = None
         if len(cat.paths) > 1 or cat.additional_info != "no info":
@@ -196,8 +197,9 @@ class UserProfileClient:
             await message.answer(text=about)
 
     async def send_match_with_extra(self, message: types.Message, match_id: str):
-        answer = self.answers_db.find({"_id": ObjectId(match_id)})[0]
-        cat = self.cats_db.find({"_id": answer.match_cat_id})[0]
+        # answer = self.cats_db.find({"_id": ObjectId(match_id)})[0]
+        # TODO search in CACHE
+        cat = self.cats_db.find({"_id": ObjectId(match_id)})[0]
         cat_images = []
         for path in cat.paths:
             cat_image = self.s3_client.load_image(path)

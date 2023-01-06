@@ -118,8 +118,7 @@ class CatsService(CatsServiceBase):
 
 
     def add_user(self, person: Person):
-        emb = self.predictor.predict(person.path)
-        person.embeddings = emb.tolist()
+        person.embeddings = self.get_embs(person.paths)
         person = self.people_db.save(person)
 
         self.find_similar_cats([person])
