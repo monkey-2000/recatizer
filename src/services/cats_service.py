@@ -2,11 +2,10 @@ import logging
 from time import time
 from typing import List
 
-import redis
+
 from pymongo import MongoClient
 
-from src.entities.answer import Answer
-from src.services.redis_service import CacheClient
+
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config

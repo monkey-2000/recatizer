@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from time import time
 
@@ -66,13 +67,16 @@ class MsgConsumer:
                 )
             )
         elif topic == self.SAW_CAT_TOPIC:
+            is_active = False
+            if message["user_id"] == int(os.environ.get("ADMIN_CHAT")):
+                is_active = True
             self.inference.save_new_cat(
                 Cat(
                     _id=None,
                     paths=message["image_paths"],
                     quadkey=message["quadkey"],
                     embeddings=None,
-                    is_active=True,
+                    is_active=is_active,
                     additional_info=message["additional_info"],
                     chat_id=message["user_id"],
                     person_name=message["person_name"],
