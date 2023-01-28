@@ -223,6 +223,7 @@ class UserProfileClient:
         os.makedirs(self.image_dir, exist_ok=True)
         image_path = os.path.join(self.image_dir, image_name)
         await message.photo[-1].download(image_path)
+        ## TODO work without S3 S3UploadFailedError
         s3_path = self.s3_client.save_image(image_path)
         os.remove(image_path)
         return s3_path
