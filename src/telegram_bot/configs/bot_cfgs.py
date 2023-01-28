@@ -3,6 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
+from src.telegram_bot.configs.bot_base_configs import KafkaConsumerCfg, TgBotConfig, S3ClientConfig
+
 load_dotenv()
 
 consumer_msg_cfd = KafkaConsumerCfg(
