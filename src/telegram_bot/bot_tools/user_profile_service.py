@@ -118,6 +118,7 @@ class UserProfileClient:
         self.s3_client = YandexS3Client(
             config.s3_client_config.aws_access_key_id,
             config.s3_client_config.aws_secret_access_key,
+            local_path="tmp_local_storage"
         )
         self.image_dir = config.image_dir
         self.__sender = MatchSender(self.image_dir)
