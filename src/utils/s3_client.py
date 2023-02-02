@@ -42,10 +42,11 @@ class YandexS3Client:
         return image
 
 
-## TODO it seems to extra method
+
     def download_file(self, file_path: str, result_path: str):
-        self.s3.download_file(
-            self.bucket_name,
-            file_path,
-            result_path
-    )
+        if not self.local_storage:
+            self.s3.download_file(
+                self.bucket_name,
+                file_path,
+                result_path
+            )

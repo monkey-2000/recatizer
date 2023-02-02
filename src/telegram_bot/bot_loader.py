@@ -2,7 +2,7 @@ from telegram import Bot, InputMediaPhoto
 from json import dumps
 from src.entities.cat import ClosestCats
 
-
+#TODO Mke new tg
 class DataUploader:
     def __init__(self, token):
         self.bot = Bot(token)

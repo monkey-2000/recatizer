@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+import redis
 from pymongo import MongoClient
 
 from src.telegram_bot.bot_loader import DataUploader
@@ -22,17 +23,22 @@ class CatsService(CatsServiceBase):
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
         self.bot_loader = DataUploader(config.bot_token)
 
-
+    def get_embs(self, paths):
+        embs = []
+        for path in paths:
+            emb = self.predictor.predict(path)
+            embs.append(emb.tolist())
+        return embs
 
     def save_new_cat(self, cat: Cat) -> bool:
-        emb = self.predictor.predict(cat.path)
+        # emb = self.predictor.predict(cat.paths)
         if cat.quadkey not in self.matcher.quadkey_index:
             cats = self.cats_db.find({'quadkey': cat.quadkey})
             if cats:
                 self.matcher.init_index(cat.quadkey, cats)
 
         self.matcher.add_items(cat.quadkey, [cat])
-        cat.embeddings = emb.tolist()
+        cat.embeddings = self.get_embs(cat.paths)
         ans = self.cats_db.save(cat)
         if not ans:
             logging.error("Cat wasn't saved!!!")

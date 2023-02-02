@@ -1,5 +1,6 @@
 import logging
 import sys
+from time import time
 
 from kafka import KafkaConsumer
 import multiprocessing.pool as mp_pool
@@ -9,7 +10,7 @@ from kafka.consumer.fetcher import ConsumerRecord
 from src.services.cats_service import CatsService
 from src.configs.service_config import default_service_config
 from src.entities.cat import Cat
-from src.entities import Person
+from src.entities.person import Person
 
 logger = logging.getLogger('chat_bot_logger')
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
@@ -24,8 +25,9 @@ class LimitedMultiprocessingPool(mp_pool.Pool):
 class MsgConsumer:
     FIND_CAT_TOPIC = 'find_cat'
     SAW_CAT_TOPIC = 'saw_cat'
+    NEW_SEARCH = "new_search"
     def __init__(self):
-        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC]
+        self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC, self.NEW_SEARCH]
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="earliest",
@@ -47,11 +49,38 @@ class MsgConsumer:
         topic = msg.topic
         message = msg.value
         if topic == self.FIND_CAT_TOPIC:
-            self.inference.add_user(Person(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                   embeddings=None, chat_id=message["user_id"]))
+            self.inference.add_user(
+                Person(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    is_active=True,
+                    additional_info=message["additional_info"],
+                    chat_id=message["user_id"],
+                    dt=-float("inf"),
+                )
+            )
         elif topic == self.SAW_CAT_TOPIC:
-            self.inference.save_new_cat(Cat(_id=None, path=message['image_path'], quadkey=message["quadkey"],
-                                           embeddings=None, additional_info=message["additional_info"]))
+            # TODO case with two cats!!!!!
+            self.inference.save_new_cat(
+                Cat(
+                    _id=None,
+                    paths=message["image_paths"],
+                    quadkey=message["quadkey"],
+                    embeddings=None,
+                    is_active=True,
+                    additional_info=message["additional_info"],
+                    chat_id=message["user_id"],
+                    person_name=message["person_name"],
+                    dt=time(),
+                )
+            )
+
+        elif topic == self.NEW_SEARCH:
+            print("New SEARCH")
+            wanted_cat = self.inference.people_db.find({'chat_id': message["user_id"], "is_active": True})
+            self.inference.find_similar_cats(wanted_cat)
 
     def main_loop(self):
         while not self.stop_processing:
