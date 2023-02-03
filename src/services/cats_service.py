@@ -1,5 +1,7 @@
 import logging
+from collections import defaultdict
 from typing import List
+from time import time
 
 import redis
 from pymongo import MongoClient
@@ -10,7 +12,7 @@ from src.configs.service_config import ServiceConfig, default_service_config
 from src.entities.cat import Cat
 from src.entities.person import Person
 from src.services.matcher import CatsMatcher, Predictor
-from src.services.mongo_service import CatsMongoClient, PeopleMongoClient
+from src.services.mongo_service import CatsMongoClient, PeopleMongoClient, AnswersMongoClient
 
 
 class CatsService(CatsServiceBase):
@@ -19,6 +21,8 @@ class CatsService(CatsServiceBase):
         client = MongoClient(config.mongoDB_url)
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
+        self.answers_db = AnswersMongoClient(client.main)
+
         self.matcher = CatsMatcher(dim=config.embedding_size)
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
         self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
@@ -50,19 +54,37 @@ class CatsService(CatsServiceBase):
         return True
 
     def find_similar_cats(self, people: List[Person]):
-        quadkeys = set({person.quadkey for person in people})
-        for quadkey in quadkeys:
+        quadkeys = defaultdict(int)
+        for person in people:
+            quadkeys[person.quadkey] = min(quadkeys[person.quadkey], person.dt)
 
-            cats = self.cats_db.find({'quadkey': quadkey})
-            if cats:
-                self.matcher.init_index(quadkey, cats)
-                closest_cats = self.matcher.find_top_closest(quadkey, people)
-                for cl in closest_cats:
-                    if cl.cats:
-                        self.bot_loader.upload(
-                            chat_id=cl.person.chat_id,
-                            cats=cl.cats
-                        )
+        # quadkeys = set({(person.quadkey, person.dt) for person in people})
+
+        for quadkey, ans_time in quadkeys.items():
+            query = {"is_active": True,
+                     "quadkey": quadkey,
+                     "dt": {"$gte": max(ans_time, 0)}}
+
+            cats = self.cats_db.find(query)
+            if not cats:
+                return
+
+            self.matcher.init_index(quadkey, cats)
+            closest_cats = self.matcher.find_top_closest(quadkey, people)
+
+
+            ## TODO Add cache
+            for cl in closest_cats:
+                cl.cats = self.answers_db.drop_sended_cats(cl.person._id, cl.cats)
+                if cl.cats:
+                    cl.person.dt = time()
+                    self.people_db.update(cl.person)
+
+                    print(self.cache.set(cl.person.chat_id, cl.cats))
+                    self.bot_loader.upload(
+                        chat_id=cl.person.chat_id,
+                        cats=cl.cats
+                    )
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({'quadkey': quadkey})
