@@ -21,9 +21,9 @@ class CatsService(CatsServiceBase):
         self.people_db = PeopleMongoClient(client.main)
         self.matcher = CatsMatcher(dim=config.embedding_size)
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
-        self.bot_loader = DataUploader(config.bot_token)
+        self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
 
-    def get_embs(self, paths):
+    def get_predictions(self, paths):
         embs = []
         for path in paths:
             emb = self.predictor.predict(path)
@@ -32,13 +32,15 @@ class CatsService(CatsServiceBase):
 
     def save_new_cat(self, cat: Cat) -> bool:
         # emb = self.predictor.predict(cat.paths)
+        cat.embeddings = self.get_predictions(cat.paths)
+
         if cat.quadkey not in self.matcher.quadkey_index:
             cats = self.cats_db.find({'quadkey': cat.quadkey})
             if cats:
                 self.matcher.init_index(cat.quadkey, cats)
 
         self.matcher.add_items(cat.quadkey, [cat])
-        cat.embeddings = self.get_embs(cat.paths)
+
         ans = self.cats_db.save(cat)
         if not ans:
             logging.error("Cat wasn't saved!!!")
@@ -47,7 +49,7 @@ class CatsService(CatsServiceBase):
         self.__recheck_cats_in_search(cat.quadkey)
         return True
 
-    def __find_similar_cats(self, people: List[Person]):
+    def find_similar_cats(self, people: List[Person]):
         quadkeys = set({person.quadkey for person in people})
         for quadkey in quadkeys:
 
@@ -57,20 +59,25 @@ class CatsService(CatsServiceBase):
                 closest_cats = self.matcher.find_top_closest(quadkey, people)
                 for cl in closest_cats:
                     if cl.cats:
-                        self.bot_loader.upload(cl)
+                        self.bot_loader.upload(
+                            chat_id=cl.person.chat_id,
+                            cats=cl.cats
+                        )
 
     def __recheck_cats_in_search(self, quadkey: str):
         people = self.people_db.find({'quadkey': quadkey})
-        self.__find_similar_cats(people)
+        self.find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
         self.people_db.delete({'chat_id': id})
 
     def add_user(self, person: Person):
-        emb = self.predictor.predict(person.path)
-        person.embeddings = emb.tolist()
+        # emb = self.predictor.predict(person.path)
+        # person.embeddings = emb.tolist()
+
+        person.embeddings = self.get_predictions(person.paths)
         person = self.people_db.save(person)
-        self.__find_similar_cats([person])
+        self.find_similar_cats([person])
 
 
 

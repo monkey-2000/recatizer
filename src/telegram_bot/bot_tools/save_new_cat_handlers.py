@@ -69,35 +69,6 @@ async def ask_about_contacts(message, state):
     )
 
 
-# async def get_contacts(message: types.Message, state: FSMContext):
-#
-#     if message.text.lower() == "yes":
-#
-#         edit_contact_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-#         edit_contact_kb.add(types.KeyboardButton(text="Send"),
-#                             types.KeyboardButton(text="Edit"))
-#
-#         user_info = {"name": message.from_user.first_name,
-#                      "contacts": f"tg: @{message.from_user.username}"}
-#         await state.update_data(user_info=user_info)
-#         await state.set_state(SaveCatStates.editing_user_info)
-#
-#         await message.answer(
-#             text=f"Your contacts:\n"
-#                  f"name: {message.from_user.first_name},\n"
-#                  f"contacts: tg: @{message.from_user.username}.\n"
-#                  f"Send or edit them? (Send/Edit)",
-#             reply_markup=edit_contact_kb
-#         )
-#
-#     elif message.text.lower() == "no":
-#         person_name = "NONAME"  ## TODO add name generator service
-#         await state.update_data(person_name=person_name)
-#         await ask_about_additional_info(message, state)
-#     else:
-#         await ask_about_contacts(message, state)
-
-
 async def edit_user_info(message: types.Message, state: FSMContext):
 
     if message.text.lower() in ["yes", "edit"]:

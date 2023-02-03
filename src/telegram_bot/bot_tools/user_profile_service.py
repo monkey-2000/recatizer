@@ -10,6 +10,7 @@ from src.services.mongo_service import (
 )
 from src.services.redis_service import CacheClient
 from src.telegram_bot.configs.bot_base_configs import TgBotConfig
+from src.utils.local_storage import LocalStorage
 from src.utils.s3_client import YandexS3Client
 
 import os
@@ -115,11 +116,12 @@ class UserProfileClient:
         self.people_db = PeopleMongoClient(client.main)
         self.answers_db = AnswersMongoClient(client.main)
         # self.image_dir = config.image_dir
-        self.s3_client = YandexS3Client(
-            config.s3_client_config.aws_access_key_id,
-            config.s3_client_config.aws_secret_access_key,
-            local_path="tmp_local_storage"
-        )
+        if config.s3_client_config.local_path:
+            self.s3_client = LocalStorage(config.s3_client_config.local_path)
+        else:
+            self.s3_client = YandexS3Client(
+                config.s3_client_config.aws_access_key_id, config.s3_client_config.aws_secret_access_key
+            )
         self.image_dir = config.image_dir
         self.__sender = MatchSender(self.image_dir)
         self.__kafka_producer = Producer()

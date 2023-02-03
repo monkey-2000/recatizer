@@ -41,6 +41,7 @@ bot_config = TgBotConfig(
     s3_client_config=S3ClientConfig(
         aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        local_path=os.environ.get('LOCAL_PATH'),
     ),
     redis_client_config = RedisClientConfig(host="localhost",
                                             port=6379,

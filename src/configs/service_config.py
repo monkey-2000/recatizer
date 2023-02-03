@@ -23,7 +23,8 @@ default_service_config = ServiceConfig(
     bot_token=os.environ.get('BOT_TOKEN'),
     s3_client_config=S3ClientConfig(
                     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                    local_path=os.environ.get('LOCAL_PATH'),
                 ),
     models_path=os.environ.get('MODEL_PATH'),
     local_models_path=os.environ.get('LOCAL_MODEL_PATH'),

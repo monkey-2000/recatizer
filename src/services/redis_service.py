@@ -25,6 +25,5 @@ class CacheClient:
 
 
     def exists(self, key: list):
-        print(key)
         key = pickle.dumps(key)
         return self.redis_client.exists(key)

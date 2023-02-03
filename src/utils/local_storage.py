@@ -18,5 +18,11 @@ class LocalStorage():
         return shutil.copy(image_path, s3_path)
 
     def load_image(self, image_path: str):
-        image  = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        image = cv2.imread(image_path, cv2.IMREAD_COLOR)
         return image
+
+    def download_file(self, file_path: str, result_path: str):
+        if not os.path.exists(os.path.dirname(result_path)):
+            os.mkdir(os.path.dirname(result_path))
+        model_path = os.path.join(self.path, file_path)
+        shutil.copy(model_path, result_path)

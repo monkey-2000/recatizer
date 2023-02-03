@@ -27,6 +27,7 @@ class KafkaConsumerCfg:
 class S3ClientConfig:
     aws_access_key_id: str
     aws_secret_access_key: str
+    local_path: str
 
 
 @dataclass
