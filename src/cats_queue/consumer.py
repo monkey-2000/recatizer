@@ -30,7 +30,7 @@ class MsgConsumer:
         self.topics = [self.FIND_CAT_TOPIC, self.SAW_CAT_TOPIC, self.NEW_SEARCH]
 
         self.consumer = KafkaConsumer(
-            auto_offset_reset="earliest",
+            auto_offset_reset="latest",
             bootstrap_servers=['localhost:9092'],
             consumer_timeout_ms=1000,
             value_deserializer=lambda v: json.loads(v.decode('ascii')),
@@ -85,6 +85,7 @@ class MsgConsumer:
     def main_loop(self):
         while not self.stop_processing:
             for msg in self.consumer:
+
                 logger.info(msg)
                 logger.info('%d: %d: k=%s v=%s' % (msg.partition,
                                              msg.offset,
@@ -93,6 +94,8 @@ class MsgConsumer:
                 if self.stop_processing:
                     break
                 self.execute(msg)
+                # self.consumer.commit()
+
         self.consumer.close()
 
 

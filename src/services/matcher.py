@@ -96,7 +96,7 @@ class CatsMatcher:
             cl.cats = [f for f, _ in filtered]
             cl.distances = [f for _, f in filtered]
             yield cl
-    def find_top_closest(self, quadkey: Optional[str], for_check: List[Entity], max_n: int = 5, thr: float = 1):
+    def find_top_closest(self, quadkey: Optional[str], for_check: List[Entity], max_n: int = 5, thr: float = 100):
         emb_for_check = self._get_embeddings(for_check)
         index = self.quadkey_index[quadkey]
         max_possible_k = min(index.element_count, max_n)

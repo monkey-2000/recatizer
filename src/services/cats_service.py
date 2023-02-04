@@ -3,9 +3,9 @@ from collections import defaultdict
 from typing import List
 from time import time
 
-import redis
 from pymongo import MongoClient
 
+from src.services.redis_service import CacheClient
 from src.telegram_bot.bot_loader import DataUploader
 from src.services.cats_service_base import CatsServiceBase
 from src.configs.service_config import ServiceConfig, default_service_config
@@ -22,7 +22,7 @@ class CatsService(CatsServiceBase):
         self.cats_db = CatsMongoClient(client.main)
         self.people_db = PeopleMongoClient(client.main)
         self.answers_db = AnswersMongoClient(client.main)
-
+        self.cache = CacheClient(config.redis_client_config)
         self.matcher = CatsMatcher(dim=config.embedding_size)
         self.predictor = Predictor(config.s3_client_config, config.models_path, config.local_models_path)
         self.bot_loader = DataUploader(config.bot_token, config.s3_client_config)
@@ -75,7 +75,7 @@ class CatsService(CatsServiceBase):
 
             ## TODO Add cache
             for cl in closest_cats:
-                cl.cats = self.answers_db.drop_sended_cats(cl.person._id, cl.cats)
+                cl.cats = self.answers_db.drop_sended_cats(cl.person._id, cl.cats)# we can filter it. But it this case
                 if cl.cats:
                     cl.person.dt = time()
                     self.people_db.update(cl.person)

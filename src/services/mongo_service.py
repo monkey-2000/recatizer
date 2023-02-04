@@ -44,6 +44,14 @@ class CatsMongoClient(MongoClientBase):
             return None
         return cat
 
+
+    def update(self, cat: Cat):
+        query = {"_id": cat._id}
+        updated_person = {"$set": cat.as_json_wo_none()}
+        ans = self.cats_collection.update_one(query, updated_person)
+        if not ans.acknowledged:
+            return None
+
 class PeopleMongoClient(MongoClientBase):
     def __init__(self, db):
         self.people_collection = db.people
@@ -63,6 +71,13 @@ class PeopleMongoClient(MongoClientBase):
         people = list(cursor)
         people = [Person.from_bson(p) for p in people]
         return people
+
+    def update(self, person: Person):
+        query = {"_id": person._id}
+        updated_person = {"$set": person.as_json_wo_none()}
+        ans = self.people_collection.update_one(query, updated_person)
+        if not ans.acknowledged:
+            return None
 
 
 
@@ -94,6 +109,7 @@ class AnswersMongoClient(MongoClientBase):
         """delete matches wich in answers yet (dont send same answers)"""
         filtered_matches = []
         for cat in match_cats:
+            # query = {"wanted_cat_id": person_id, "match_cat_id": cat._id, "user_answer": -1}
             query = {"wanted_cat_id": person_id, "match_cat_id": cat._id}
             if not list(self.answers_collection.find(query)):
                 filtered_matches.append(cat)
