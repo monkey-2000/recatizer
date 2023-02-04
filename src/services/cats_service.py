@@ -102,4 +102,9 @@ class CatsService(CatsServiceBase):
         self.find_similar_cats([person])
 
 
+if __name__ == '__main__':
+    cs = CatsService(default_service_config)
+    people = cs.people_db.find({})
+    cs.find_similar_cats(people)
+
 
