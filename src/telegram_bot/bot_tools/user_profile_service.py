@@ -160,9 +160,10 @@ class UserProfileClient:
 
         return any([cat_id == str(match._id) for match in matches])
 
-    def delete_match(self, chat_id: int, cat: Cat):
+    def delete_match(self, chat_id: int, cat_id: Cat):
         matches = self.redis_client.get(chat_id)
-        matches.remove(cat)
+        cat = [cat for cat in matches if str(cat._id) == cat_id]
+        matches.remove(cat[0])
         return self.redis_client.set(chat_id, matches)
 
 
