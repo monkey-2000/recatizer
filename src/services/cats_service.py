@@ -79,7 +79,7 @@ class CatsService(CatsServiceBase):
                 if cl.cats:
                     cl.person.dt = time()
                     self.people_db.update(cl.person)
-
+                    _ = self.answers_db.add_matches(cl)
                     print(self.cache.set(cl.person.chat_id, cl.cats))
                     self.bot_loader.upload(
                         chat_id=cl.person.chat_id,
@@ -104,7 +104,18 @@ class CatsService(CatsServiceBase):
 
 if __name__ == '__main__':
     cs = CatsService(default_service_config)
-    people = cs.people_db.find({})
-    cs.find_similar_cats(people)
+    # people = cs.people_db.find({})
+    # cs.find_similar_cats(people)
+
+    cat = Cat( _id=None,
+            paths=['/home/art/PycharmProjects/recatizer_23/src/telegram_bot/tmp_local_storage/3d99afc6-ee26-458c-906d-bb540b5a4e79.jpg'],
+            quadkey='no_quad',
+            embeddings=None,
+            is_active=True,
+            additional_info="This is test cat",
+            chat_id='450390623',
+            person_name="Test name",
+            dt=time())
+    cs.save_new_cat(cat)
 
 

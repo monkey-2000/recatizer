@@ -55,24 +55,24 @@ class CatsMatcher:
         self.mapping = defaultdict(dict)
 
     def init_index(self, quadkey: Optional[str], stored_cats: List[Cat]):
-        embeddings, cat_ids = self._get_embeddings(stored_cats)
+        embeddings, emb_owners = self._get_embeddings(stored_cats)
         if quadkey not in self.quadkey_index:
             self.quadkey_index[quadkey] = hnswlib.Index(space='l2', dim=self.dim)
             self.quadkey_index[quadkey].init_index(max_elements=self.max_elements, ef_construction=200, M=16)
             ids = np.arange(embeddings.shape[0])
             self.quadkey_index[quadkey].add_items(embeddings, ids)
-            self.mapping[quadkey] = {id: cat for cat, id in zip(cat_ids, list(ids))} # TODO it doesn t work case
+            self.mapping[quadkey] = {id: cat for cat, id in zip(emb_owners, list(ids))} # TODO it doesn t work case
             self.quadkey_index[quadkey].set_ef(50)
 
     def add_items(self, quadkey: Optional[str], items: List[Cat]):
-        embeddings, cat_ids = self._get_embeddings(items)
+        embeddings, emb_owners = self._get_embeddings(items)
         if quadkey not in self.quadkey_index:
             self.init_index(quadkey, items)
         max_id = max(self.mapping[quadkey].keys())
         # TODO
         ids = np.arange(max_id+1, embeddings.shape[0] + max_id+1)
         self.quadkey_index[quadkey].add_items(embeddings, ids)
-        self.mapping[quadkey] = {**self.mapping[quadkey], **{id: cat for cat, id in zip(items, list(ids))}}
+        self.mapping[quadkey] = {**self.mapping[quadkey], **{id: cat for cat, id in zip(emb_owners, list(ids))}}
 
     def __get_by_idx(self, quadkey:str, idxs: List[int]):
         ids = [idx for idx in idxs if idx >= 0]
@@ -87,15 +87,15 @@ class CatsMatcher:
 
     def _get_embeddings(self, entities: List[Entity]):
         all_embeddings = []
-        cat_ids = []
-        for cat in entities:
-            all_embeddings.append(cat.embeddings)
-            cat_ids.extend([str(cat._id)] * len(cat.embeddings))
+        owners = []
+        for owner in entities:
+            all_embeddings.append(owner.embeddings)
+            owners.extend([owner] * len(owner.embeddings))
 
         # all_embeddings = [c.embeddings for c in entities]
         all_embeddings = np.float32(np.vstack(all_embeddings))
         all_embeddings = normalize(all_embeddings, axis=1, norm="l2")
-        return all_embeddings, cat_ids
+        return all_embeddings, owners
 
     def filter_by_thr(self, closest: List[ClosestCats], thr: float):
         for cl in closest:
@@ -106,10 +106,10 @@ class CatsMatcher:
 
     # TODO fix case with two embeddings
     def find_top_closest(self, quadkey: Optional[str], for_check: List[Entity], max_n: int = 5, thr: float = 100):
-        emb_for_check, _ = self._get_embeddings(for_check)
+        embs_for_check, _ = self._get_embeddings(for_check)
         index = self.quadkey_index[quadkey]
         max_possible_k = min(index.element_count, max_n)
-        labels, distances = index.knn_query(emb_for_check, k=max_possible_k)
+        labels, distances = index.knn_query(embs_for_check, k=max_possible_k)
         closest = self.create_distances_df(quadkey, for_check, labels, distances)
         res = list(self.filter_by_thr(closest, thr))
         return res
