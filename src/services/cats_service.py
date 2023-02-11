@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import List
 from time import time
 
+from bson import ObjectId
 from pymongo import MongoClient
 
 from src.services.redis_service import CacheClient
@@ -80,7 +81,7 @@ class CatsService(CatsServiceBase):
                     cl.person.dt = time()
                     self.people_db.update(cl.person)
                     _ = self.answers_db.add_matches(cl)
-                    print(self.cache.set(cl.person.chat_id, cl.cats))
+                    self.cache.set(cl.person.chat_id, cl.cats)
                     self.bot_loader.upload(
                         chat_id=cl.person.chat_id,
                         cats=cl.cats
@@ -100,6 +101,17 @@ class CatsService(CatsServiceBase):
         person.embeddings = self.get_predictions(person.paths)
         person = self.people_db.save(person)
         self.find_similar_cats([person])
+
+    def mark_user_answer(self, message):
+        wanted_cat= self.people_db.find({"chat_id": message["chat_id"],
+                                             "is_active": True})
+        if wanted_cat:
+            wanted_cat = wanted_cat[0]
+            answer = self.answers_db.find({"wanted_cat_id": wanted_cat._id,
+                                           "match_cat_id": ObjectId(message["match_cat_id"])})
+            answer = answer[0]
+            answer.user_answer = message["user_answer"]
+            self.answers_db.update(answer)
 
 
 if __name__ == '__main__':

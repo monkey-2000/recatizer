@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import redis
 
 from src.cats_queue.producer import Producer
+from src.entities.cat import Cat
 from src.services.mongo_service import (
     CatsMongoClient,
     PeopleMongoClient,
@@ -142,10 +143,17 @@ class UserProfileClient:
         matches = self.redis_client.get(chat_id)
         return cat in matches
 
-    def delete_match(self, chat_id, cat):
+    def delete_match(self, chat_id: int,cat: Cat):
         matches = self.redis_client.get(chat_id)
-
         matches.remove(cat)
+
+        self.__kafka_producer.send(
+            value={"match_cat_id": str(cat._id),
+                   "chat_id": chat_id,
+                   "user_answer": 0},
+            key=str(cat._id),
+            topic="mark_user_answer"
+        )
         return self.redis_client.set(chat_id, matches)
 
 
@@ -173,9 +181,6 @@ class UserProfileClient:
             await message.answer(text=about)
 
 
-
-
-
     async def send_match(self, message: types.Message, cat, match_id, more_info=False):
         about = None
         if len(cat.paths) > 1 or cat.additional_info != "no info":
@@ -198,9 +203,12 @@ class UserProfileClient:
         if about:
             await message.answer(text=about)
 
-    async def send_match_with_extra(self, message: types.Message, match_id: str):
-        answer = self.answers_db.find({"_id": ObjectId(match_id)})[0]
-        cat = self.cats_db.find({"_id": answer.match_cat_id})[0]
+    async def send_match_with_extra(self, message: types.Message, match_cat_id: str):
+        # answer = self.answers_db.find({"_id": ObjectId(match_id)})
+        # answer =  answer[0] if answer else None
+
+        # cat = self.cats_db.find({"_id": answer.match_cat_id})[0]
+        cat = self.cats_db.find({"_id": ObjectId(match_cat_id)})[0]
         cat_images = []
         for path in cat.paths:
             cat_image = self.s3_client.load_image(path)
@@ -217,7 +225,7 @@ class UserProfileClient:
         if cat.additional_info != "no info":
             await message.answer(text=f"ADDITIONAL INFO: {cat.additional_info}")
 
-        await self.__sender.send_match(message, cat, cat_images, match_id)
+        await self.__sender.send_match(message, cat, cat_images, match_cat_id)
 
         #
 
