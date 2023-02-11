@@ -18,6 +18,7 @@ async def lost_cat(message: types.Message, state: FSMContext):
     query = {"chat_id": message.from_user.id, "is_active": True}
     cats = user_profile.people_db.find(query)
 
+    # TODO Kafka or cache
     if len(cats) > 0:
         await message.answer(
             "You are already looking for one cat.",
@@ -35,7 +36,7 @@ async def lost_cat(message: types.Message, state: FSMContext):
 
 
 async def _show_last_matches(message: types.Message):
-    cats = user_profile.get_matches(message.from_user.id)
+    cats = await user_profile.get_matches(message.from_user.id)
     if cats:
         if len(cats) > bot_config.max_sending_cats:
             await message.answer(
@@ -43,7 +44,7 @@ async def _show_last_matches(message: types.Message):
             )
             cats = cats[: bot_config.max_sending_cats]
         for cat in cats:
-            await user_profile._send_match(message, cat)
+            await user_profile.send_match(message, cat)
 
         await message.answer(
             text="Please mark your matches.", reply_markup=get_find_menu_kb()
@@ -54,11 +55,12 @@ async def _show_last_matches(message: types.Message):
             "\nWait a few minutes we started a new search...\n",
             reply_markup=get_find_menu_kb()
         )
-        new_search_task = {"user_id": message.from_user.id,
-                      "cat_name": message.from_user.id,
-                      "kafka_topic": "new_search"}
 
-        await user_profile.send_msg_to_model(new_search_task)
+        await user_profile.send_msg_to_model(
+            kafka_message={"user_id": message.from_user.id},
+            key=message.from_user.id,
+            topic="new_search"
+        )
 
 
 def get_find_menu_kb():

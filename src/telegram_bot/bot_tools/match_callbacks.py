@@ -12,27 +12,26 @@ MatchesCb = CallbackData("matches", "action", "match_id")
 
 async def mark_answer(call: types.CallbackQuery, callback_data: dict):
     cat_id = callback_data["match_id"]
-    cat = user_profile.cats_db.find({"_id": ObjectId(cat_id)})[0]
     chat_id = call.from_user.id
+
     if not user_profile.exists_match(chat_id=chat_id,
-                                     cat=cat):
+                                     cat_id=cat_id):
         await call.answer(text="This match has already been noted!", show_alert=True)
         return
 
     if callback_data["action"] == "yes":
-        wanted_cat = user_profile.cats_db.find({"chat_id": chat_id,
-                                                "is_active": True})[0]
+        user_profile.mark_answer(chat_id, cat_id, answer=1)
 
-        user_profile.answers_db.save_correct_answer(wanted_cat=wanted_cat._id,
-                                                    cat_id=cat._id)
     elif callback_data["action"] == "no":
-
         user_profile.delete_match(chat_id=chat_id,
-                                  cat=cat)
-        # TODO fix case with no cat
+                                  cat_id=cat_id)
+        user_profile.mark_answer(chat_id, cat_id, answer=0)
+
     await call.answer(text="We mark your answer!", show_alert=True)
 
 
+
+# MAke it via kafka
 async def show_more_about_cat(call: types.CallbackQuery, callback_data: dict):
     match_id = callback_data["match_id"]
     await call.answer(text="We send you more info.", show_alert=True)

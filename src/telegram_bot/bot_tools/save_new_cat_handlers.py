@@ -102,26 +102,12 @@ async def edit_user_info(message: types.Message, state: FSMContext):
         await ask_about_contacts(message, state)
 
 
-
-# async def confirm_user_info(message: types.Message, state: FSMContext):
-#     state_data = await state.get_data()
-#     person_name = "{0} (contacts: {1})".format(state_data["user_info"]["name"],
-#                                                 state_data["user_info"]["contacts"])
-#     await state.update_data(person_name=person_name)
-#     await ask_about_additional_info(message, state)
-
-
 def get_field_kb(user_info: dict):
     field_kb = types.InlineKeyboardMarkup(row_width=1)
     for key in user_info:
         field_kb.add(types.InlineKeyboardButton("{0}: {1}".format(key, user_info[key]),
                                                 callback_data=ContactCb.new(action="edit", field_key=key)))
     return field_kb
-
-
-
-
-
 
 
 async def editing_user_info(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
@@ -147,8 +133,6 @@ async def ask_about_additional_info(message, state):
         "Please write us additional info in TEXT MESSAGE about this cat or press no",
         reply_markup=get_extra_info_kb(),
     )
-
-
 
 
 async def ask_about_location(message: types.Message, state: FSMContext):
@@ -188,7 +172,18 @@ async def without_handle_location(message: types.Message, state: FSMContext):
 
 
 async def send_msg(message, cat_data):
-    is_sent = await user_profile.send_msg_to_model(cat_data)
+
+    is_sent = await user_profile.send_msg_to_model(
+        kafka_message = {
+                        "user_id": cat_data["user_id"],
+                        "cat_name": cat_data["cat_name"],
+                        "image_paths": cat_data["s3_paths"],
+                        "additional_info": cat_data["additional_info"],
+                        "quadkey": cat_data["quadkey"],
+                        "person_name": cat_data["person_name"]},
+        key = cat_data["cat_name"],
+        topic = cat_data["kafka_topic"]
+    )
 
     if not is_sent:
         await message.answer(
@@ -215,19 +210,6 @@ def register_save_new_cat_handlers(dp: Dispatcher):
     dp.register_message_handler(
         save_photo_to_s3, content_types=["photo"], state=[RStates.find, RStates.saw]
     )
-
-    # dp.register_message_handler(
-    #     get_extra_info, Text(equals=["Yes"], ignore_case=True), state=SaveCatStates.ask_extra_info)
-
-
-
-    # dp.register_message_handler(
-    #     get_contacts, content_types=["text"], state=SaveCatStates.ask_user_info
-    # )
-
-    # dp.register_message_handler(confirm_user_info,
-    #                             Text(equals="Send", ignore_case=True),
-    #                             state=[SaveCatStates.ask_user_info, SaveCatStates.editing_user_info])
 
     dp.register_message_handler(edit_user_info,
                                 content_types=["text"],

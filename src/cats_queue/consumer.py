@@ -27,11 +27,13 @@ class MsgConsumer:
     SAW_CAT_TOPIC = 'saw_cat'
     NEW_SEARCH = "new_search"
     MARK_ANSWER ="mark_user_answer"
+    MATCH_EXTRA="get_match_extra"
     def __init__(self):
         self.topics = [self.FIND_CAT_TOPIC,
                        self.SAW_CAT_TOPIC,
                        self.NEW_SEARCH,
-                       self.MARK_ANSWER]
+                       self.MARK_ANSWER,
+                       self.MATCH_EXTRA]
 
         self.consumer = KafkaConsumer(
             auto_offset_reset="latest",
@@ -85,8 +87,15 @@ class MsgConsumer:
             print("New SEARCH")
             wanted_cat = self.inference.people_db.find({'chat_id': message["user_id"], "is_active": True})
             self.inference.find_similar_cats(wanted_cat)
+
         elif topic == self.MARK_ANSWER:
             self.inference.mark_user_answer(message)
+
+        elif topic == self.MATCH_EXTRA:
+            print('extra')
+            # kafka_message = {"cat_ids": cat_id,
+            #                  "chat_id": chat_id},
+            pass
 
 
     def main_loop(self):
