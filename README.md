@@ -2,4 +2,4 @@
 
 #### Search for missing cats by their images
 
-![img.png](img.png)
+![img_1.png](img_1.png)
