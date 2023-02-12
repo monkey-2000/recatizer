@@ -54,6 +54,18 @@ class CatsService(CatsServiceBase):
         self.__recheck_cats_in_search(cat.quadkey)
         return True
 
+    def __get_answers(self, people: List[Person]):
+
+        ids = [person._id for person in people]
+        query = {"wanted_cat_id": {"$in": ids}}
+        user_answers = self.answers_db.find(query)
+
+        answers = defaultdict(dict)
+        for user_answer in user_answers:
+            answers[user_answer.wanted_cat_id][user_answer.match_cat_id] = user_answer.user_answer
+
+        return answers
+
     def find_similar_cats(self, people: List[Person]):
         quadkeys = defaultdict(int)
         for person in people:
@@ -71,7 +83,9 @@ class CatsService(CatsServiceBase):
                 return
 
             self.matcher.init_index(quadkey, cats)
-            closest_cats = self.matcher.find_top_closest(quadkey, people)
+            answers = self.__get_answers(people)
+            closest_cats = self.matcher.find_top_closest(quadkey, people, answers)
+
 
 
             ## TODO Add cache
@@ -81,14 +95,20 @@ class CatsService(CatsServiceBase):
                     cl.person.dt = time()
                     self.people_db.update(cl.person)
                     _ = self.answers_db.add_matches(cl)
-                    self.cache.set(cl.person.chat_id, cl.cats)
+
+                    matches = cl.cats
+                    cache = []
+                    if self.cache.exists(cl.person.chat_id):
+                        cache.extend(self.cache.get(cl.person.chat_id))
+                    self.cache.set(cl.person.chat_id, [*cache, *matches])
+
                     self.bot_loader.upload(
                         chat_id=cl.person.chat_id,
                         cats=cl.cats
                     )
 
     def __recheck_cats_in_search(self, quadkey: str):
-        people = self.people_db.find({'quadkey': quadkey})
+        people = self.people_db.find({'quadkey': quadkey, "is_active": True})
         self.find_similar_cats(people)
 
     def delete_user(self, chat_id: str):
@@ -116,18 +136,19 @@ class CatsService(CatsServiceBase):
 
 if __name__ == '__main__':
     cs = CatsService(default_service_config)
-    # people = cs.people_db.find({})
-    # cs.find_similar_cats(people)
+    # people = cs.people_db.find({"is_active": True})
+    people = cs.people_db.find({})
+    cs.find_similar_cats(people)
 
-    cat = Cat( _id=None,
-            paths=['/home/art/PycharmProjects/recatizer_23/src/telegram_bot/tmp_local_storage/3d99afc6-ee26-458c-906d-bb540b5a4e79.jpg'],
-            quadkey='no_quad',
-            embeddings=None,
-            is_active=True,
-            additional_info="This is test cat",
-            chat_id='450390623',
-            person_name="Test name",
-            dt=time())
-    cs.save_new_cat(cat)
+    # cat = Cat( _id=None,
+    #         paths=['/home/art/PycharmProjects/recatizer_23/src/telegram_bot/tmp_local_storage/3d99afc6-ee26-458c-906d-bb540b5a4e79.jpg'],
+    #         quadkey='no_quad',
+    #         embeddings=None,
+    #         is_active=True,
+    #         additional_info="This is test cat",
+    #         chat_id='450390623',
+    #         person_name="Test name",
+    #         dt=time())
+    # cs.save_new_cat(cat)
 
 
