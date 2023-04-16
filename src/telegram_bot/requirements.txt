@@ -1,0 +1,12 @@
+Sphinx
+coverage
+aiogram==2.23.1
+pymongo
+motor
+kafka-python
+python-dotenv==0.21.0
+black==22.10.0
+mercantile==1.2.1
+opencv-python==4.7.0.68
+boto3==1.26.59
+redis==4.4.2

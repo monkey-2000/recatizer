@@ -10,4 +10,21 @@
 #   ----------------------------------------------------------------
 #
 # DO NOT ADD THIS FILE TO VERSION CONTROL!
-CAT_INDIVIDUALS_DS_PATH='!!!!WRITE PATH FOR INDIVID CATS DATASETS!!!!!'
+CAT_INDIVIDUALS_DS_PATH = "!!!!WRITE PATH FOR INDIVID CATS DATASETS!!!!!"
+
+PROJECT_DIR = ""
+# for train
+CAT_INDIVIDUALS_DS_PATH = ""
+OUTPUT_FILEPATH = project_dir + "/data/raw/"
+
+# telegram bot
+BOT_TOKEN = ""
+
+# Yandex storage
+AWS_ACCESS_KEY_ID = ""
+AWS_SECRET_ACCESS_KEY = ""
+MONGO_URL = ""  # "mongodb://localhost:27017/" /"mongodb://user:userpassword@ip/table"
+
+# Model way
+MODEL_PATH = ""
+LOCAL_MODEL_PATH = ""

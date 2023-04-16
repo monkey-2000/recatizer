@@ -3,6 +3,8 @@ import cv2
 import boto3
 import numpy as np
 
+from src.utils.local_storage import LocalStorage
+
 
 class YandexS3Client:
     def __init__(self, access_key: str, secret_key: str, bucket_name: str = "recatizer-bucket"):
@@ -29,9 +31,11 @@ class YandexS3Client:
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         return image
 
+
+
     def download_file(self, file_path: str, result_path: str):
-        self.s3.download_file(
-            self.bucket_name,
-            file_path,
-            result_path
-    )
+            self.s3.download_file(
+                self.bucket_name,
+                file_path,
+                result_path
+            )
