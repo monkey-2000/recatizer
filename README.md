@@ -3,7 +3,6 @@
 Lost pet search service. The project is frozen.
  
 Scenarios
----
 <hr>   
 Use cases:
 
@@ -16,7 +15,6 @@ For each use case you have to upload information about the lost cat
 ![cat_info.png](docs/pics/cat_info.png)
 
 Stack and system design
----
 <hr>
 
 ![system_design.png](docs/pics/system_design.png)
