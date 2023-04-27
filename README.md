@@ -18,6 +18,7 @@ Stack and system design
 ---
 
 ![system_design.png](docs/pics/system_design.png)
+
 **Stack**: 
 - Kafka, 
 -  MongoDB, 
